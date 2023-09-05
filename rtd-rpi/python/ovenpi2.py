@@ -52,7 +52,7 @@ def chart_data():
 	def read_temps():
 		while True:
 			json_data = json.dumps(
-				{'time':datetime.now().strftime('%Y-%m-%d %H:%M:%S'),'value':round(librtd.get(0,5),2)})
+				{'time':datetime.now().strftime('%Y-%m-%d %H:%M:%S'),'value0':round(librtd.get(0,5),2),'value1':round(librtd.get(0,6),2)})
 			yield f"data:{json_data}\n\n"
 			time.sleep(1)
 	

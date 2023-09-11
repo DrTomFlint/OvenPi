@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>OvenPi2d</title>
-    <link href="static/bootstrap.min.css" rel="stylesheet">
-    <link href="static/Chart.min.css" rel="stylesheet">
+    <title>OvenPi2</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.css" rel="stylesheet">
 </head>
 <body>
 <div class="container">
@@ -14,14 +14,11 @@
                 <div class="card-body">
                     <canvas id="canvas"></canvas>
                 </div>
-                <div class="card-body">
-                    <canvas id="canvas2"></canvas>
-                </div>
             </div>
         </div>
     </div>
 </div>
-<!-- <div class="container">
+<div class="container">
     <div class="row">
         <div class="col-12">
             <div class="card">
@@ -31,7 +28,7 @@
             </div>
         </div>
     </div>
-</div> -->
+</div>
 <div class="container">
     <div class="row">
         <div class="col-12">
@@ -43,13 +40,12 @@
         </div>
     </div>
 </div>
-
 <!--suppress JSUnresolvedLibraryURL -->
-<script src="static/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
 <!--suppress JSUnresolvedLibraryURL -->
-<script src="static/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
 <!--suppress JSUnresolvedLibraryURL -->
-<script src="static/Chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js"></script>
 <script>
     $(document).ready(function () {
         const config = {
@@ -249,33 +245,17 @@
         const source = new EventSource("/chart_data");
 
         source.onmessage = function (event) {
-            const data = JSON.parse(event.data);  
-            // following line controls the shifting of time axis                          
-            if (config.data.labels.length === 200) {
-                config.data.labels.shift();
-                config2.data.labels.shift();
-                config3.data.labels.shift();
-                config.data.datasets[0].data.shift();
-                config.data.datasets[1].data.shift();
-                config.data.datasets[2].data.shift();
-                config.data.datasets[3].data.shift();
-                config2.data.datasets[0].data.shift();
-                config2.data.datasets[1].data.shift();
-                config3.data.datasets[0].data.shift();
-                config3.data.datasets[1].data.shift();
-            }
+            const data = JSON.parse(event.data);
             config.data.labels.push(data.time);
             config.data.datasets[0].data.push(data.top);
             config.data.datasets[1].data.push(data.bottom);
             config.data.datasets[2].data.push(data.front);
             config.data.datasets[3].data.push(data.back);
             lineChart.update();
-
             config2.data.labels.push(data.time);
             config2.data.datasets[0].data.push(data.probe1);
             config2.data.datasets[1].data.push(data.probe2);
             lineChart2.update();
-
             config3.data.labels.push(data.time);
             config3.data.datasets[0].data.push(data.pi);
             config3.data.datasets[1].data.push(data.heatsink);

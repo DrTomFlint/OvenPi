@@ -15,9 +15,22 @@
         <th>Controller</th>
     </tr>
     <tr>
-        <td><canvas id="canvas1" width="550" height="400"></canvas></td>
-        <td><canvas id="canvas2" width="550" height="400"></canvas></td>
-        <td><canvas id="canvas3" width="550" height="400"></canvas></td>
+        <td><canvas id="canvas1" width="550" height="350"></canvas></td>
+        <td><canvas id="canvas2" width="550" height="350"></canvas></td>
+        <td><canvas id="canvas3" width="550" height="350"></canvas></td>
+    </tr>
+</table>
+<br>
+<table>
+    <tr>
+        <th>Delta</th>
+        <th>Heaters</th>
+        <th>Unused</th>
+    </tr>
+    <tr>
+        <td><canvas id="canvas4" width="550" height="350"></canvas></td>
+        <td><canvas id="canvas5" width="550" height="350"></canvas></td>
+        <td><canvas id="canvas6" width="550" height="350"></canvas></td>
     </tr>
 </table>
 
@@ -213,13 +226,186 @@
             }
         };
 
+        const config4= {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                {
+                    label: "Delta",
+                    backgroundColor: 'rgb(255, 0, 0)',
+                    borderColor: 'rgb(255, 0, 0)',
+                    data: [],
+                    fill: false,
+                }
+                ],
+            },
+            options: {
+                responsive: true,
+                title: {
+                    display: false,
+                    text: 'Delta'
+                },
+                tooltips: {
+                    mode: 'null',
+                    intersect: false,
+                },
+                hover: {
+                    mode: 'null',
+                    intersect: true
+                },
+                scales: {
+                    xAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Time'
+                        },
+                        ticks:{
+                            autoSkip: true,
+                            maxTicksLimit: 10
+                        }
+                    }],
+                    yAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Value'
+                        }
+                    }]
+                }
+            }
+        };
+
+        const config5= {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                {
+                    label: "Upper",
+                    backgroundColor: 'rgb(255, 0, 0)',
+                    borderColor: 'rgb(255, 0, 0)',
+                    data: [],
+                    fill: false,
+                },
+                {
+                    label: "Lower",
+                    backgroundColor: 'rgb(0, 255, 0)',
+                    borderColor: 'rgb(0, 255, 0)',
+                    data: [],
+                    fill: false,
+                },
+                {
+                    label: "Fan",
+                    backgroundColor: 'rgb(0, 0, 255)',
+                    borderColor: 'rgb(0, 0, 255)',
+                    data: [],
+                    fill: false,
+                }
+                ],
+            },
+            options: {
+                responsive: true,
+                title: {
+                    display: false,
+                    text: 'Heaters'
+                },
+                tooltips: {
+                    mode: 'null',
+                    intersect: false,
+                },
+                hover: {
+                    mode: 'null',
+                    intersect: true
+                },
+                scales: {
+                    xAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Time'
+                        },
+                        ticks:{
+                            autoSkip: true,
+                            maxTicksLimit: 10
+                        }
+                    }],
+                    yAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Value'
+                        }
+                    }]
+                }
+            }
+        };
+
+        const config6 = {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                {
+                    label: "unused",
+                    backgroundColor: 'rgb(255, 0, 0)',
+                    borderColor: 'rgb(255, 0, 0)',
+                    data: [],
+                    fill: false,
+                }
+                ],
+            },
+            options: {
+                responsive: true,
+                title: {
+                    display: false,
+                    text: 'unused'
+                },
+                tooltips: {
+                    mode: 'null',
+                    intersect: false,
+                },
+                hover: {
+                    mode: 'null',
+                    intersect: true
+                },
+                scales: {
+                    xAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Time'
+                        },
+                        ticks:{
+                            autoSkip: true,
+                            maxTicksLimit: 10
+                        }
+                    }],
+                    yAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Value'
+                        }
+                    }]
+                }
+            }
+        };
+
         const context1 = document.getElementById('canvas1').getContext('2d');
         const context2 = document.getElementById('canvas2').getContext('2d');
         const context3 = document.getElementById('canvas3').getContext('2d');
+        const context4 = document.getElementById('canvas4').getContext('2d');
+        const context5 = document.getElementById('canvas5').getContext('2d');
+        const context6 = document.getElementById('canvas6').getContext('2d');
 
         const lineChart1 = new Chart(context1, config1);
         const lineChart2 = new Chart(context2, config2);
         const lineChart3 = new Chart(context3, config3);
+        const lineChart4 = new Chart(context4, config4);
+        const lineChart5 = new Chart(context5, config5);
+        const lineChart6 = new Chart(context6, config6);
 
         const source = new EventSource("/chart_data");
 
@@ -230,6 +416,9 @@
                 config1.data.labels.shift();
                 config2.data.labels.shift();
                 config3.data.labels.shift();
+                config4.data.labels.shift();
+                config5.data.labels.shift();
+                config6.data.labels.shift();
                 config1.data.datasets[0].data.shift();
                 config1.data.datasets[1].data.shift();
                 config1.data.datasets[2].data.shift();
@@ -238,6 +427,11 @@
                 config2.data.datasets[1].data.shift();
                 config3.data.datasets[0].data.shift();
                 config3.data.datasets[1].data.shift();
+                config4.data.datasets[0].data.shift();
+                config5.data.datasets[0].data.shift();
+                config5.data.datasets[1].data.shift();
+                config5.data.datasets[2].data.shift();
+                config6.data.datasets[0].data.shift();
             }
             config1.data.labels.push(data.time);
             config1.data.datasets[0].data.push(data.top);
@@ -255,6 +449,21 @@
             config3.data.datasets[0].data.push(data.pi);
             config3.data.datasets[1].data.push(data.heatsink);
             lineChart3.update();
+
+            config4.data.labels.push(data.time);
+            config4.data.datasets[0].data.push(data.delta);
+            lineChart4.update();
+
+            config5.data.labels.push(data.time);
+            config5.data.datasets[0].data.push(data.upper);
+            config5.data.datasets[1].data.push(data.lower);
+            config5.data.datasets[2].data.push(data.fan);
+            lineChart5.update();
+
+            config6.data.labels.push(data.time);
+            config6.data.datasets[0].data.push(data.spare);
+            lineChart6.update();
+
         }
     });
 </script>

@@ -44,11 +44,14 @@ probe1 = 0.0
 probe2 = 0.0
 pi = 0.0
 heatsink = 0.0
+delta = 0.0
 upper = 0.0
 lower = 0.0
 fan = 0.0
+spare = 0.0
 time0 = time.time()
 timei = 0.0
+setpoint = 23.5
 
 # read 8 temps from rtd
 def read_temps():
@@ -62,7 +65,12 @@ def read_temps():
     global probe2
     global pi
     global heatsink
-    # count = 0   # make this var a local
+    global upper
+    global lower
+    global fan
+    global delta
+    global spare
+    count = 0   # make this var a local
 
     while True:
         timei = datetime.now().strftime('%H:%M:%S')
@@ -74,8 +82,16 @@ def read_temps():
         probe2 = librtd.get(0,3)
         pi = librtd.get(0,5)
         heatsink = librtd.get(0,6)
-        # count = count + 1
-        # print("Count %6d: top = %6.2f" % (count,top), flush=True)
+        count = count + 1
+        spare = count * 0.01
+        delta = setpoint - top
+        if count%10 == 0:
+            upper = not upper
+        if count%15 == 0:
+            lower = not lower
+        if count%20 == 0:
+            fan = not fan
+        print("Count %6d: upper = %2d, lower = %2d, fan = %2d" % (count,upper,lower,fan), flush=True)
         time.sleep(1)
 
 #start up threads
@@ -97,10 +113,12 @@ def chart_data():
 				'top':top,'probe1':probe1,\
 				'probe2':probe2,'back':back,\
 				'pi':pi,'heatsink':heatsink,\
-				'bottom':bottom,'front':front\
+				'bottom':bottom,'front':front,\
+                'delta':delta,'spare':spare,\
+                'upper':upper+2.2,'lower':lower+1.1,'fan':fan\
 				})
 			yield f"data:{json_data}\n\n"
-			time.sleep(1)
+			time.sleep(5)
 	
 	response = Response(stream_with_context(read_temps()), mimetype="text/event-stream")
 	response.headers["Cache-Control"] = "no-cache"

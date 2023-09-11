@@ -246,6 +246,20 @@
 
         source.onmessage = function (event) {
             const data = JSON.parse(event.data);
+            // following line controls the shifting of time axis                          
+            if (config.data.labels.length === 200) {
+                config.data.labels.shift();
+                config2.data.labels.shift();
+                config3.data.labels.shift();
+                config.data.datasets[0].data.shift();
+                config.data.datasets[1].data.shift();
+                config.data.datasets[2].data.shift();
+                config.data.datasets[3].data.shift();
+                config2.data.datasets[0].data.shift();
+                config2.data.datasets[1].data.shift();
+                config3.data.datasets[0].data.shift();
+                config3.data.datasets[1].data.shift();
+            }
             config.data.labels.push(data.time);
             config.data.datasets[0].data.push(data.top);
             config.data.datasets[1].data.push(data.bottom);

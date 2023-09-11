@@ -2,19 +2,48 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>OvenPi2</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.css" rel="stylesheet">
+    <title>OvenPi2b</title>
+    <link href="static/bootstrap.min.css" rel="stylesheet">
+    <link href="static/Chart.min.css" rel="stylesheet">
 </head>
 <body>
-<div class="container">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <canvas id="canvas"></canvas>
+
+<table style="width:100%">
+    <tr>
+        <td>
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <canvas id="canvas1"></canvas>
+                    </div>
                 </div>
             </div>
+        </td>
+        <td>
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <canvas id="canvas2"></canvas>
+                    </div>
+                </div>
+            </div>
+        </td>
+        <td>
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <canvas id="canvas3"></canvas>
+                    </div>
+                </div>
+            </div>
+        </td>
+    </tr>
+</table>    
+
+<!-- <div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <canvas id="canvas"></canvas>
         </div>
     </div>
 </div>
@@ -40,15 +69,29 @@
         </div>
     </div>
 </div>
+ -->
+<!-- <table style="width:100%">
+    <tr>
+        <th>Chamber</th>
+        <th>Probes</th>
+        <th>Controller</th>
+    </tr>
+    <tr>
+        <td><canvas id="canvas1" width="200" height="100"></canvas></td>
+        <td><canvas id="canvas2" width="200" height="100"></canvas></td>
+        <td><canvas id="canvas3" width="200" height="100"></canvas></td>
+    </tr>
+</table>     -->
+
 <!--suppress JSUnresolvedLibraryURL -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+<script src="static/jquery.min.js"></script>
 <!--suppress JSUnresolvedLibraryURL -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+<script src="static/bootstrap.min.js"></script>
 <!--suppress JSUnresolvedLibraryURL -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js"></script>
+<script src="static/Chart.min.js"></script>
 <script>
     $(document).ready(function () {
-        const config = {
+        const config1 = {
             type: 'line',
             data: {
                 labels: [],
@@ -234,42 +277,44 @@
             }
         };
 
-        const context = document.getElementById('canvas').getContext('2d');
+        const context1 = document.getElementById('canvas').getContext('2d');
         const context2 = document.getElementById('canvas2').getContext('2d');
         const context3 = document.getElementById('canvas3').getContext('2d');
 
-        const lineChart = new Chart(context, config);
+        const lineChart1 = new Chart(context1, config1);
         const lineChart2 = new Chart(context2, config2);
         const lineChart3 = new Chart(context3, config3);
 
         const source = new EventSource("/chart_data");
 
         source.onmessage = function (event) {
-            const data = JSON.parse(event.data);
+            const data = JSON.parse(event.data);  
             // following line controls the shifting of time axis                          
-            if (config.data.labels.length === 200) {
-                config.data.labels.shift();
+            if (config1.data.labels.length === 200) {
+                config1.data.labels.shift();
                 config2.data.labels.shift();
                 config3.data.labels.shift();
-                config.data.datasets[0].data.shift();
-                config.data.datasets[1].data.shift();
-                config.data.datasets[2].data.shift();
-                config.data.datasets[3].data.shift();
+                config1.data.datasets[0].data.shift();
+                config1.data.datasets[1].data.shift();
+                config1.data.datasets[2].data.shift();
+                config1.data.datasets[3].data.shift();
                 config2.data.datasets[0].data.shift();
                 config2.data.datasets[1].data.shift();
                 config3.data.datasets[0].data.shift();
                 config3.data.datasets[1].data.shift();
             }
-            config.data.labels.push(data.time);
-            config.data.datasets[0].data.push(data.top);
-            config.data.datasets[1].data.push(data.bottom);
-            config.data.datasets[2].data.push(data.front);
-            config.data.datasets[3].data.push(data.back);
-            lineChart.update();
+            config1.data.labels.push(data.time);
+            config1.data.datasets[0].data.push(data.top);
+            config1.data.datasets[1].data.push(data.bottom);
+            config1.data.datasets[2].data.push(data.front);
+            config1.data.datasets[3].data.push(data.back);
+            lineChart1.update();
+
             config2.data.labels.push(data.time);
             config2.data.datasets[0].data.push(data.probe1);
             config2.data.datasets[1].data.push(data.probe2);
             lineChart2.update();
+
             config3.data.labels.push(data.time);
             config3.data.datasets[0].data.push(data.pi);
             config3.data.datasets[1].data.push(data.heatsink);

@@ -16,3 +16,33 @@ table, th, td {
 th, td {
     padding: 15px;
 }
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+       -webkit-appearance: none;
+        margin: 0;
+}
+
+input[type="text"]
+{
+    font-size:30px;
+}
+input[type="number"]
+{
+    font-size:30px;
+    width: 100px;
+}
+
+.button {
+    background-color: #4CAF50; /* Green */
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 30px;
+    margin: 4px 2px;
+    cursor: pointer;
+}
+  

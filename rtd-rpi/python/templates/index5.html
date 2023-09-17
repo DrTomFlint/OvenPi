@@ -28,8 +28,60 @@
 
 <!-- <textarea id="text1" cols="100" rows="10"></textarea> -->
 
-<button class="button" id="stopButton">Stop</button>
-<input id="setpoint" type="number" value="25">
+<table>
+    <tr>
+        <th>Run</th>
+        <th>Upper</th>
+        <th>Lower</th>
+        <th>Fan</th>
+        <th>Setpoint</th>
+        <th>Avg</th>
+        <th>Predict</th>
+        <th>Ton</th>
+        <th>Top</th>
+        <th>Bottom</th>
+        <th>Front</th>
+        <th>Back</th>
+        <th>Probe1</th>
+        <th>Probe2</th>
+        <th>Pi</th>
+        <th>Heatsink</th>
+    </tr>
+    <tr>
+        <td><label class="toggle">
+            <input type="checkbox" id="onoff">
+            <span class="slider"></span>
+            <span class="labels" data-on="ON" data-off="OFF"></span>
+        </label></td>
+        <td><label class="toggle">
+            <input type="checkbox" id="enableupper">
+            <span class="slider"></span>
+            <span class="labels" data-on="ON" data-off="OFF"></span>
+        </label></td>
+        <td><label class="toggle">
+            <input type="checkbox" id="enablelower">
+            <span class="slider"></span>
+            <span class="labels" data-on="ON" data-off="OFF"></span>
+        </label></td>
+        <td><label class="toggle">
+            <input type="checkbox" id="enablefan">
+            <span class="slider"></span>
+            <span class="labels" data-on="ON" data-off="OFF"></span>
+        </label></td>
+        <td><input id="setpoint" type="number" value="25"></td>
+        <td id="tAvg"></td>
+        <td id="tPre"></td>
+        <td id="tTon"></td>
+        <td id="tTop"></td>
+        <td id="tBottom"></td>
+        <td id="tFront"></td>
+        <td id="tBack"></td>
+        <td id="tProbe1"></td>
+        <td id="tProbe2"></td>
+        <td id="tPi"></td>
+        <td id="tHeatsink"></td>
+    </tr>
+</table>
 
 <!--suppress JSUnresolvedLibraryURL -->
 <script src="static/jquery.min.js"></script>
@@ -231,9 +283,23 @@
                 labels: [],
                 datasets: [
                 {
-                    label: "Delta",
+                    label: "Setpoint",
+                    backgroundColor: 'rgb(0, 0, 255)',
+                    borderColor: 'rgb(0, 0, 255)',
+                    data: [],
+                    fill: false,
+                },
+                {
+                    label: "Average",
                     backgroundColor: 'rgb(255, 0, 0)',
                     borderColor: 'rgb(255, 0, 0)',
+                    data: [],
+                    fill: false,
+                },
+                {
+                    label: "Predict",
+                    backgroundColor: 'rgb(0, 255, 0)',
+                    borderColor: 'rgb(0, 255, 0)',
                     data: [],
                     fill: false,
                 }
@@ -243,7 +309,7 @@
                 responsive: true,
                 title: {
                     display: true,
-                    text: 'Delta'
+                    text: 'Temperature'
                 },
                 tooltips: {
                     mode: 'null',
@@ -275,7 +341,71 @@
                 }
             }
         };
-        const config5= {
+        const config5 = {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                {
+                    label: "Delta",
+                    backgroundColor: 'rgb(255, 0, 0)',
+                    borderColor: 'rgb(255, 0, 0)',
+                    data: [],
+                    fill: false,
+                },
+                {
+                    label: "Predict Delta",
+                    backgroundColor: 'rgb(0, 255, 0)',
+                    borderColor: 'rgb(0, 255, 0)',
+                    data: [],
+                    fill: false,
+                },
+                {
+                    label: "Time On",
+                    backgroundColor: 'rgb(0, 0, 255)',
+                    borderColor: 'rgb(0, 0, 255)',
+                    data: [],
+                    fill: false,
+                }
+                ],
+            },
+            options: {
+                responsive: true,
+                title: {
+                    display: true,
+                    text: 'Control',
+                },
+                tooltips: {
+                    mode: 'null',
+                    intersect: false,
+                },
+                hover: {
+                    mode: 'null',
+                    intersect: true
+                },
+                scales: {
+                    xAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Time'
+                        },
+                        ticks:{
+                            autoSkip: true,
+                            maxTicksLimit: 10
+                        }
+                    }],
+                    yAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Value'
+                        }
+                    }]
+                }
+            }
+        };    
+        const config6= {
             type: 'line',
             data: {
                 labels: [],
@@ -339,56 +469,6 @@
                 }
             }
         };
-        const config6 = {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [
-                {
-                    label: "unused",
-                    backgroundColor: 'rgb(255, 0, 0)',
-                    borderColor: 'rgb(255, 0, 0)',
-                    data: [],
-                    fill: false,
-                }
-                ],
-            },
-            options: {
-                responsive: true,
-                title: {
-                    display: true,
-                    text: 'unused',
-                },
-                tooltips: {
-                    mode: 'null',
-                    intersect: false,
-                },
-                hover: {
-                    mode: 'null',
-                    intersect: true
-                },
-                scales: {
-                    xAxes: [{
-                        display: true,
-                        scaleLabel: {
-                            display: true,
-                            labelString: 'Time'
-                        },
-                        ticks:{
-                            autoSkip: true,
-                            maxTicksLimit: 10
-                        }
-                    }],
-                    yAxes: [{
-                        display: true,
-                        scaleLabel: {
-                            display: true,
-                            labelString: 'Value'
-                        }
-                    }]
-                }
-            }
-        };
 
         const context1 = document.getElementById('canvas1').getContext('2d');
         const context2 = document.getElementById('canvas2').getContext('2d');
@@ -410,12 +490,39 @@
         // Emit a change in setpoint, limit the range
         const setpoint = document.getElementById('setpoint');
         setpoint.onchange = function(){
-//            var setval = document.getElementById('setpoint').value;
             var setval = Number(setpoint.value);
             if(setval<0)setval=0;
             if(setval>285)setval=285;
             setpoint.value = setval;
             socket.emit('update_setpoint',setval);
+        }
+
+        // Emit a change in on/off switch
+        const onoff = document.getElementById('onoff');
+        onoff.onchange = function(){
+            var onoffval = onoff.checked;
+            socket.emit('update_onoff',onoffval);
+        }
+
+        // Emit a change in upper enable
+        const enableupper = document.getElementById('enableupper');
+        enableupper.onchange = function(){
+            var upperval = enableupper.checked;
+            socket.emit('update_upper',upperval);
+        }
+
+        // Emit a change in lower enable
+        const enablelower = document.getElementById('enablelower');
+        enablelower.onchange = function(){
+            var lowerval = enablelower.checked;
+            socket.emit('update_lower',lowerval);
+        }
+
+        // Emit a change in fan enable
+        const enablefan = document.getElementById('enablefan');
+        enablefan.onchange = function(){
+            var fanval = enablefan.checked;
+            socket.emit('update_fan',fanval);
         }
 
         // Listen for the 'update_chart' event from the server
@@ -442,10 +549,14 @@
                 config3.data.datasets[0].data.shift();
                 config3.data.datasets[1].data.shift();
                 config4.data.datasets[0].data.shift();
+                config4.data.datasets[1].data.shift();
+                config4.data.datasets[2].data.shift();
                 config5.data.datasets[0].data.shift();
                 config5.data.datasets[1].data.shift();
                 config5.data.datasets[2].data.shift();
                 config6.data.datasets[0].data.shift();
+                config6.data.datasets[1].data.shift();
+                config6.data.datasets[2].data.shift();
             }
             config1.data.labels.push(data.time);
             config1.data.datasets[0].data.push(data.top);
@@ -465,18 +576,34 @@
             lineChart3.update();
 
             config4.data.labels.push(data.time);
-            config4.data.datasets[0].data.push(data.delta);
+            config4.data.datasets[0].data.push(data.setpoint);
+            config4.data.datasets[1].data.push(data.avg);
+            config4.data.datasets[2].data.push(data.predict);
             lineChart4.update();
 
             config5.data.labels.push(data.time);
-            config5.data.datasets[0].data.push(data.upper);
-            config5.data.datasets[1].data.push(data.lower);
-            config5.data.datasets[2].data.push(data.fan);
+            config5.data.datasets[0].data.push(data.delta);
+            config5.data.datasets[1].data.push(data.predictdelta);
+            config5.data.datasets[2].data.push(data.timeon);
             lineChart5.update();
 
             config6.data.labels.push(data.time);
-            config6.data.datasets[0].data.push(data.spare);
+            config6.data.datasets[0].data.push(data.upper);
+            config6.data.datasets[1].data.push(data.lower);
+            config6.data.datasets[2].data.push(data.fan);
             lineChart6.update();
+
+            document.getElementById('tAvg').innerHTML = data.avg.toFixed(1);
+            document.getElementById('tPre').innerHTML = data.predict.toFixed(1);
+            document.getElementById('tTon').innerHTML = data.timeon;
+            document.getElementById('tTop').innerHTML = data.top.toFixed(1);
+            document.getElementById('tBottom').innerHTML = data.bottom.toFixed(1);
+            document.getElementById('tFront').innerHTML = data.front.toFixed(1)
+            document.getElementById('tBack').innerHTML = data.back.toFixed(1);
+            document.getElementById('tProbe1').innerHTML = data.probe1.toFixed(1);
+            document.getElementById('tProbe2').innerHTML = data.probe2.toFixed(1);
+            document.getElementById('tPi').innerHTML = data.pi.toFixed(1);
+            document.getElementById('tHeatsink').innerHTML = data.heatsink.toFixed(1);
 
         });
     });

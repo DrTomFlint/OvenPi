@@ -22,8 +22,8 @@ def handler(signum,frame):
 	print("Control C detected, exiting ovenpi.py")
 	print(" ")
 	GPIO.output(21,0)
-	GPIO.output(16,0)
 	GPIO.output(12,0)
+	GPIO.output(16,0)
 	GPIO.cleanup()
 	exit(1)
 
@@ -32,12 +32,12 @@ signal.signal(signal.SIGINT, handler)
 # Setup GPIOs that control the SSRs
 GPIO.setwarnings(False)
 # GPIO21 = Pin40 = Blue Wire = Upper Element
-# GPIO16 = Pin36 = Yellow Wire = Fan
 # GPIO12 = Pin32 = Green Wire = Lower Element
+# GPIO16 = Pin36 = Yellow Wire = Fan
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(21,GPIO.OUT)
-GPIO.setup(16,GPIO.OUT)
 GPIO.setup(12,GPIO.OUT)
+GPIO.setup(16,GPIO.OUT)
 
 # globals to hold current readings and commands
 top = 0.0
@@ -48,14 +48,25 @@ probe1 = 0.0
 probe2 = 0.0
 pi = 0.0
 heatsink = 0.0
+avg = 0
+avglist = [0,0,0,0]
+predict = 0
+timeon = 0
+timecount = 0
 delta = 0.0
+predictdelta = 0.0
 upper = 0.0
 lower = 0.0
 fan = 0.0
 spare = 0.0
 time0 = time.time()
 timei = 0.0
-setpoint = 23.5
+setpoint = 25
+onoff = False
+enableupper = False
+enablelower = False
+enablefan = False
+N = 30
 
 # read 8 temps from rtd
 def read_temps():
@@ -74,6 +85,12 @@ def read_temps():
     global fan
     global delta
     global spare
+    global avg
+    global avglist
+    global predict
+    global predictdelta
+    global timeon
+    global timecount
     count = 0   # make this var a local
 
     while True:
@@ -87,15 +104,64 @@ def read_temps():
         pi = librtd.get(0,5)
         heatsink = librtd.get(0,6)
         count = count + 1
-        spare = count * 0.01
-        delta = setpoint - top
-        if count%10 == 0:
-            upper = not upper
-        if count%15 == 0:
-            lower = not lower
-        if count%20 == 0:
-            fan = not fan
-        #print("Count %6d: upper = %2d, lower = %2d, fan = %2d" % (count,upper,lower,fan), flush=True)
+        spare = count
+        avg = 0.25*(top+bottom+front+back)
+        delta = setpoint - avg
+        # once every N seconds update the time on
+        if count==N:
+            count=0
+            if avglist[0]==0:
+                avglist=[avg,avg,avg,avg]
+                predict=avg
+            else:
+                avglist.append(avg)
+                avglist.pop(0)
+                predict=avg+avglist[3]-avglist[0]
+            predictdelta = setpoint-predict
+            if predictdelta>0:
+                timeon = timeon+1
+                if timeon > N:
+                    timeon = N
+            else:
+                timeon = 0
+            timecount = timeon
+
+        if onoff == False:
+            # oven is off
+            timeon = 0
+            timecount = 0
+            upper = 0
+            lower = 0
+            fan = 0
+            GPIO.output(21,0)   # upper off
+            GPIO.output(12,0)   # lower off
+            GPIO.output(16,0)   # fan off
+        else:
+            # oven is on
+            if enablefan == True:
+                GPIO.output(16,1)   # fan on
+                fan = 1
+            else:
+                GPIO.output(16,0)   # fan off
+                fan = 0
+            if timecount > 0:
+                # on time has not expired
+                if enableupper == True:
+                    GPIO.output(21,1)   # upper on
+                    upper = timeon
+                if enablelower == True:
+                    GPIO.output(12,1)   # lower on
+                    lower = timeon
+                timecount = timecount-1
+            else:
+                # on time has expired
+                GPIO.output(21,0)   # upper off
+                GPIO.output(12,0)   # lower off
+                upper = timeon
+                lower = timeon
+
+        print("Count %4d: set=%6.1f avg=%6.1f delta=%6.1f predict=%6.1f predictdelta=%6.1f timeon=%2d timecount=%2d" % 
+              (count,  setpoint,    avg,      delta,     predict,       predictdelta,      timeon,     timecount), flush=True)
         time.sleep(1)
 
 #start up threads
@@ -105,13 +171,14 @@ t1.start()
 def emit_data():
     while True:
         json_data = json.dumps(
-        {'time':timei,\
-        'top':top,'probe1':probe1,\
-        'probe2':probe2,'back':back,\
-        'pi':pi,'heatsink':heatsink,\
-        'bottom':bottom,'front':front,\
-        'delta':delta,'spare':spare,\
-        'upper':upper+2.2,'lower':lower+1.1,'fan':fan\
+        {'time':timei,'avg':round(avg,1),'timeon':timeon,\
+        'top':round(top,1),'probe1':round(probe1,1),\
+        'probe2':round(probe2,1),'back':round(back,1),\
+        'pi':round(pi,1),'heatsink':round(heatsink,1),\
+        'bottom':round(bottom,1),'front':round(front,1),\
+        'setpoint':round(setpoint,1),'delta':round(delta,1),\
+        'upper':upper,'lower':lower,'fan':fan,\
+        'predict':round(predict,1),'predictdelta':round(predictdelta,1)\
         })
         
         # Send data to the 'update_chart' event
@@ -128,7 +195,33 @@ def index():
 
 @socketio.on('update_setpoint')			
 def update_setpoint(data):
+    global setpoint
     print("Update setpoint to ",data)
+    setpoint = data
+
+@socketio.on('update_onoff')			
+def update_onoff(data):
+    global onoff
+    print("Update on/off to ",data)
+    onoff = data
+
+@socketio.on('update_upper')			
+def update_upper(data):
+    global enableupper
+    print("Update upper enable to ",data)
+    enableupper = data
+
+@socketio.on('update_lower')			
+def update_lower(data):
+    global enablelower
+    print("Update lower enable to ",data)
+    enablelower = data
+
+@socketio.on('update_fan')			
+def update_fan(data):
+    global enablefan
+    print("Update fan enable to ",data)
+    enablefan = data
 
 if __name__=="__main__":
 #	app.run(host='0.0.0.0',debug=False)

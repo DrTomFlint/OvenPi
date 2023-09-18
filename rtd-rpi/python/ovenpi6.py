@@ -1,4 +1,4 @@
-# ovenpi4.py, try to use web sockets
+# ovenpi6.py, increase resolution of PWM using time.sleep for off-time
 import librtd
 import RPi.GPIO as GPIO
 import time
@@ -28,6 +28,9 @@ def handler(signum,frame):
 	exit(1)
 
 signal.signal(signal.SIGINT, handler)
+
+# Create a mutex to prevent interruption of the controller thread
+lock = threading.Lock()
 	
 # Setup GPIOs that control the SSRs
 GPIO.setwarnings(False)
@@ -49,7 +52,7 @@ probe2 = 0.0
 pi = 0.0
 heatsink = 0.0
 avg = 0
-timeon = 0
+on_time = 0
 timecount = 0
 delta = 0.0
 deltalim = 0.0
@@ -65,10 +68,22 @@ enableupper = False
 enablelower = False
 enablefan = False
 N = 10
+# PID gains
+Kp = 0.075
+Ki = 0.0
+Kd = 0.0
+# PID controller implementation
+K1 = Kp+Ki+Kd
+K2 = -Kp-2*Kd
+K3 = Kd
+e = 0
+e1 = 0
+e2 = 0
+d = 0
 
 # read 8 temps from rtd
-def read_temps():
-    # must declare these as globals otherwise they are redefined in local scope
+def controller():
+    # call out globals that are modified within this function
     global timei
     global top
     global bottom
@@ -81,16 +96,28 @@ def read_temps():
     global upper
     global lower
     global fan
-    global delta
-    global deltalim
-    global integral
+    global e
+    global e1
+    global e2
+    global d
     global avg
-    global timeon
-    global timecount
-    count = 0   # make this var a local
+    global on_time
+    # local vars
+    count = 0  
+    time1 = 0.0
+    time2 = 0.0
 
     while True:
-#        timei = datetime.now().strftime('%H:%M:%S')
+        count = count + 1       # cycle counter for debug
+        # fan control
+        if enablefan == True:
+            GPIO.output(16,1)   # fan on
+            fan = 1
+        else:
+            GPIO.output(16,0)   # fan off
+            fan = 0
+
+        # read sensors
         timei = time.time()-time0
         top = librtd.get(0,1)
         bottom = librtd.get(0,7)
@@ -100,94 +127,76 @@ def read_temps():
         probe2 = librtd.get(0,3)
         pi = librtd.get(0,5)
         heatsink = librtd.get(0,6)
-        count = count + 1
-        spare = count
         avg = 0.25*(top+bottom+front+back)
-        delta = setpoint - avg
-        # once every N seconds update the time on
-        if count==N:
-            count=0
-        #     deltalim=delta
-        #     if delta>10:
-        #         deltalim=10
-        #     if delta>20:
-        #         deltalim=0
 
-        #     if onoff==True:
-        #         integral=integral+deltalim
-        #     else:
-        #         integral=0
+        # PID controller, always compute errors
+        e2 = e1
+        e1 = e
+        e = setpoint - avg
 
-        #     if delta>0:
-        #         timeon = np.ceil(0.1*delta+0.01*integral)
-        #         if timeon>N:
-        #             timeon=N
-        #     else:
-        #         timeon=0
-
-        # TEST do an open loop step response
-            timeon = 1
-            timecount = timeon
-
-        
         if onoff == False:
             # oven is off
-            timeon = 0
-            timecount = 0
-            upper = 0
-            lower = 0
-            fan = 0
+            on_time = 0
             GPIO.output(21,0)   # upper off
             GPIO.output(12,0)   # lower off
             GPIO.output(16,0)   # fan off
         else:
-            # oven is on
-            if enablefan == True:
-                GPIO.output(16,1)   # fan on
-                fan = 1
-            else:
-                GPIO.output(16,0)   # fan off
-                fan = 0
-            if timecount > 0:
-                # on time has not expired
-                if enableupper == True:
-                    GPIO.output(21,1)   # upper on
-                    upper = timeon
-                if enablelower == True:
-                    GPIO.output(12,1)   # lower on
-                    lower = timeon
-                timecount = timecount-1
-            else:
-                # on time has expired
-                GPIO.output(21,0)   # upper off
-                GPIO.output(12,0)   # lower off
-                upper = timeon
-                lower = timeon
+            # PID controller, compute on_time
+            with lock:
+                if e>0:
+                    d = K1*e + K2*e1 + K3*e2
+                    # limit max on_time so emit_data thread can get some time
+                    on_time = on_time + d
+                    if on_time>0.9:
+                        on_time=0.9
+                else:
+                    on_time=0
 
-        print("Count %4d: set=%5.1f avg=%5.1f delta=%5.1f integral=%5.1f timeon=%2d timecount=%2d" % 
-              (count,  setpoint,    avg,      delta,     integral,      timeon,     timecount), flush=True)
-        time.sleep(1)
+                if on_time > 0:
+                    # turn on output
+                    time1=time.time()
+                    if enableupper == True:
+                        GPIO.output(21,1)   # upper on
+                    if enablelower == True:
+                        GPIO.output(12,1)   # lower on
+                    # delay for timeon
+                    time.sleep(on_time)
+                    # turn off output
+                    time2=time.time()
+                    GPIO.output(21,0)   # upper off
+                    GPIO.output(12,0)   # lower off
+                else:
+                    # output should be entirely off
+                    time1=time2=0
+                    GPIO.output(21,0)   # upper off
+                    GPIO.output(12,0)   # lower off
+
+        print("%5d: time=%5d    set=%5.1f    avg=%5.1f    e=%5.1f    on_time=%5.3f    actual=%5.3f" % 
+              (count, timei,    setpoint,    avg,         e,         on_time,         time2-time1), flush=True)
+        
+        # delay 1 second minus the on_time
+        time.sleep(1-on_time)
 
 #start up threads
-t1 = threading.Thread(target=read_temps,daemon=True)
+t1 = threading.Thread(target=controller,daemon=True)
 t1.start()
 
 def emit_data():
     while True:
-        json_data = json.dumps(
-        {'time':round(timei,0),'avg':round(avg,1),'timeon':timeon,\
-        'top':round(top,1),'probe1':round(probe1,1),\
-        'probe2':round(probe2,1),'back':round(back,1),\
-        'pi':round(pi,1),'heatsink':round(heatsink,1),\
-        'bottom':round(bottom,1),'front':round(front,1),\
-        'setpoint':round(setpoint,1),'delta':round(-delta,1),\
-        'upper':upper,'lower':lower,'fan':fan,\
-        'integral':round(integral,1)\
-        })
-        
-        # Send data to the 'update_chart' event
-        socketio.emit('update_chart', json_data)
-        #print("emit data {}",json_data)
+        with lock:
+            json_data = json.dumps(
+            {'time':round(timei,0),
+            'top':round(top,1),'bottom':round(bottom,1),
+            'front':round(front,1),'back':round(back,1),
+            'probe1':round(probe1,1),'probe2':round(probe2,1),
+            'pi':round(pi,1),'heatsink':round(heatsink,1),
+            'setpoint':round(setpoint,1),'avg':round(avg,1),
+            'e':round(-e,1),'on_time':round(on_time,3)
+            })
+            
+            # Send data to the 'update_chart' event
+            socketio.emit('update_chart', json_data)
+            #print("emit data {}",json_data)
         
         # Sleep for a while (adjust this based on your desired update rate)
         time.sleep(5)
@@ -195,7 +204,7 @@ def emit_data():
 # flask webpage main
 @app.route("/")
 def index():
-	return render_template('index5.html')
+	return render_template('index6.html')
 
 @socketio.on('update_setpoint')			
 def update_setpoint(data):
@@ -212,7 +221,6 @@ def update_onoff(data):
     if data==True:
         time0=time.time()
         print(round(time0,0))
-
 
 @socketio.on('update_upper')			
 def update_upper(data):

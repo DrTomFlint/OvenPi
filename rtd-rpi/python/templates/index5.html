@@ -36,8 +36,9 @@
         <th>Fan</th>
         <th>Setpoint</th>
         <th>Avg</th>
-        <th>Predict</th>
+        <th>Error</th>
         <th>Ton</th>
+        <th>Int</th>
         <th>Top</th>
         <th>Bottom</th>
         <th>Front</th>
@@ -70,8 +71,9 @@
         </label></td>
         <td><input id="setpoint" type="number" value="25"></td>
         <td id="tAvg"></td>
-        <td id="tPre"></td>
+        <td id="tDelta"></td>
         <td id="tTon"></td>
+        <td id="tInt"></td>
         <td id="tTop"></td>
         <td id="tBottom"></td>
         <td id="tFront"></td>
@@ -295,13 +297,6 @@
                     borderColor: 'rgb(255, 0, 0)',
                     data: [],
                     fill: false,
-                },
-                {
-                    label: "Predict",
-                    backgroundColor: 'rgb(0, 255, 0)',
-                    borderColor: 'rgb(0, 255, 0)',
-                    data: [],
-                    fill: false,
                 }
                 ],
             },
@@ -352,20 +347,6 @@
                     borderColor: 'rgb(255, 0, 0)',
                     data: [],
                     fill: false,
-                },
-                {
-                    label: "Predict Delta",
-                    backgroundColor: 'rgb(0, 255, 0)',
-                    borderColor: 'rgb(0, 255, 0)',
-                    data: [],
-                    fill: false,
-                },
-                {
-                    label: "Time On",
-                    backgroundColor: 'rgb(0, 0, 255)',
-                    borderColor: 'rgb(0, 0, 255)',
-                    data: [],
-                    fill: false,
                 }
                 ],
             },
@@ -373,7 +354,7 @@
                 responsive: true,
                 title: {
                     display: true,
-                    text: 'Control',
+                    text: 'Error',
                 },
                 tooltips: {
                     mode: 'null',
@@ -550,10 +531,7 @@
                 config3.data.datasets[1].data.shift();
                 config4.data.datasets[0].data.shift();
                 config4.data.datasets[1].data.shift();
-                config4.data.datasets[2].data.shift();
                 config5.data.datasets[0].data.shift();
-                config5.data.datasets[1].data.shift();
-                config5.data.datasets[2].data.shift();
                 config6.data.datasets[0].data.shift();
                 config6.data.datasets[1].data.shift();
                 config6.data.datasets[2].data.shift();
@@ -578,23 +556,21 @@
             config4.data.labels.push(data.time);
             config4.data.datasets[0].data.push(data.setpoint);
             config4.data.datasets[1].data.push(data.avg);
-            config4.data.datasets[2].data.push(data.predict);
             lineChart4.update();
 
             config5.data.labels.push(data.time);
             config5.data.datasets[0].data.push(data.delta);
-            config5.data.datasets[1].data.push(data.predictdelta);
-            config5.data.datasets[2].data.push(data.timeon);
             lineChart5.update();
 
             config6.data.labels.push(data.time);
-            config6.data.datasets[0].data.push(data.upper+0.2);     // add some offset so both lines show
-            config6.data.datasets[1].data.push(data.lower-0.2);
+            config6.data.datasets[0].data.push(data.upper+0.1);     // add some offset so both lines show
+            config6.data.datasets[1].data.push(data.lower-0.1);
             config6.data.datasets[2].data.push(data.fan);
             lineChart6.update();
 
             document.getElementById('tAvg').innerHTML = data.avg.toFixed(1);
-            document.getElementById('tPre').innerHTML = data.predict.toFixed(1);
+            document.getElementById('tDelta').innerHTML = data.delta.toFixed(1);
+            document.getElementById('tInt').innerHTML = data.integral.toFixed(1);
             document.getElementById('tTon').innerHTML = data.timeon;
             document.getElementById('tTop').innerHTML = data.top.toFixed(1);
             document.getElementById('tBottom').innerHTML = data.bottom.toFixed(1);

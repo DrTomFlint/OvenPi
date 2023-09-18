@@ -49,17 +49,14 @@ probe2 = 0.0
 pi = 0.0
 heatsink = 0.0
 avg = 0
-avglist = [0,0,0,0,0,0, 0,0,0,0,0,0]    # should hold 2 min of data
-predict = 0
 timeon = 0
 timecount = 0
 delta = 0.0
-predictdelta = 0.0
-predictint = 0
+deltalim = 0.0
+integral = 0.0
 upper = 0.0
 lower = 0.0
 fan = 0.0
-spare = 0.0
 time0 = time.time()
 timei = 0.0
 setpoint = 25
@@ -85,12 +82,9 @@ def read_temps():
     global lower
     global fan
     global delta
-    global spare
+    global deltalim
+    global integral
     global avg
-    global avglist
-    global predict
-    global predictdelta
-    global predictint
     global timeon
     global timecount
     count = 0   # make this var a local
@@ -113,21 +107,24 @@ def read_temps():
         # once every N seconds update the time on
         if count==N:
             count=0
-            if avglist[0]==0:
-                avglist=[avg,avg,avg,avg]
-                predict=avg
-            else:
-                avglist.append(avg)
-                avglist.pop(0)
-                predict=avg+avglist[3]-avglist[0]
+            deltalim=delta
+            if delta>10:
+                deltalim=10
+            if delta>20:
+                deltalim=0
 
-            predictdelta = setpoint-predict
-            predictint = predictint + predictdelta
-            timeon = 0
-            if predictdelta>0:
-                timeon = np.ceil(0.1*predictdelta+0.01*predictint)
+            if onoff==True:
+                integral=integral+deltalim
             else:
-                timeon = 0
+                integral=0
+
+            if delta>0:
+                timeon = np.ceil(0.1*delta+0.01*integral)
+                if timeon>N:
+                    timeon=N
+            else:
+                timeon=0
+
             timecount = timeon
 
         if onoff == False:
@@ -137,7 +134,6 @@ def read_temps():
             upper = 0
             lower = 0
             fan = 0
-            predictint = 0
             GPIO.output(21,0)   # upper off
             GPIO.output(12,0)   # lower off
             GPIO.output(16,0)   # fan off
@@ -165,8 +161,8 @@ def read_temps():
                 upper = timeon
                 lower = timeon
 
-        print("Count %4d: set=%5.1f avg=%5.1f delta=%5.1f predict=%5.1f predictdelta=%5.1f predictint=%5.1f timeon=%2d timecount=%2d" % 
-              (count,  setpoint,    avg,      delta,     predict,       predictdelta,      predictint,      timeon,     timecount), flush=True)
+        print("Count %4d: set=%5.1f avg=%5.1f delta=%5.1f integral=%5.1f timeon=%2d timecount=%2d" % 
+              (count,  setpoint,    avg,      delta,     integral,      timeon,     timecount), flush=True)
         time.sleep(1)
 
 #start up threads
@@ -181,9 +177,9 @@ def emit_data():
         'probe2':round(probe2,1),'back':round(back,1),\
         'pi':round(pi,1),'heatsink':round(heatsink,1),\
         'bottom':round(bottom,1),'front':round(front,1),\
-        'setpoint':round(setpoint,1),'delta':round(delta,1),\
+        'setpoint':round(setpoint,1),'delta':round(-delta,1),\
         'upper':upper,'lower':lower,'fan':fan,\
-        'predict':round(predict,1),'predictdelta':round(predictdelta,1)\
+        'integral':round(integral,1)\
         })
         
         # Send data to the 'update_chart' event
@@ -210,7 +206,7 @@ def update_onoff(data):
     global time0
     print("Update on/off to ",data)
     onoff = data
-    if data=="True":
+    if data==True:
         time0=time.time()
         print(round(time0,0))
 

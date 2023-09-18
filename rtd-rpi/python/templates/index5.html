@@ -492,7 +492,7 @@
         setpoint.onchange = function(){
             var setval = Number(setpoint.value);
             if(setval<0)setval=0;
-            if(setval>285)setval=285;
+            if(setval>230)setval=230;
             setpoint.value = setval;
             socket.emit('update_setpoint',setval);
         }
@@ -588,8 +588,8 @@
             lineChart5.update();
 
             config6.data.labels.push(data.time);
-            config6.data.datasets[0].data.push(data.upper);
-            config6.data.datasets[1].data.push(data.lower);
+            config6.data.datasets[0].data.push(data.upper+0.2);     // add some offset so both lines show
+            config6.data.datasets[1].data.push(data.lower-0.2);
             config6.data.datasets[2].data.push(data.fan);
             lineChart6.update();
 

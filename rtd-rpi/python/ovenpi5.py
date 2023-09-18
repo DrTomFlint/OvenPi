@@ -49,12 +49,13 @@ probe2 = 0.0
 pi = 0.0
 heatsink = 0.0
 avg = 0
-avglist = [0,0,0,0]
+avglist = [0,0,0,0,0,0, 0,0,0,0,0,0]    # should hold 2 min of data
 predict = 0
 timeon = 0
 timecount = 0
 delta = 0.0
 predictdelta = 0.0
+predictint = 0
 upper = 0.0
 lower = 0.0
 fan = 0.0
@@ -66,7 +67,7 @@ onoff = False
 enableupper = False
 enablelower = False
 enablefan = False
-N = 30
+N = 10
 
 # read 8 temps from rtd
 def read_temps():
@@ -89,12 +90,14 @@ def read_temps():
     global avglist
     global predict
     global predictdelta
+    global predictint
     global timeon
     global timecount
     count = 0   # make this var a local
 
     while True:
-        timei = datetime.now().strftime('%H:%M:%S')
+#        timei = datetime.now().strftime('%H:%M:%S')
+        timei = time.time()-time0
         top = librtd.get(0,1)
         bottom = librtd.get(0,7)
         front = librtd.get(0,8)
@@ -117,11 +120,12 @@ def read_temps():
                 avglist.append(avg)
                 avglist.pop(0)
                 predict=avg+avglist[3]-avglist[0]
+
             predictdelta = setpoint-predict
+            predictint = predictint + predictdelta
+            timeon = 0
             if predictdelta>0:
-                timeon = timeon+1
-                if timeon > N:
-                    timeon = N
+                timeon = np.ceil(0.1*predictdelta+0.01*predictint)
             else:
                 timeon = 0
             timecount = timeon
@@ -133,6 +137,7 @@ def read_temps():
             upper = 0
             lower = 0
             fan = 0
+            predictint = 0
             GPIO.output(21,0)   # upper off
             GPIO.output(12,0)   # lower off
             GPIO.output(16,0)   # fan off
@@ -160,8 +165,8 @@ def read_temps():
                 upper = timeon
                 lower = timeon
 
-        print("Count %4d: set=%6.1f avg=%6.1f delta=%6.1f predict=%6.1f predictdelta=%6.1f timeon=%2d timecount=%2d" % 
-              (count,  setpoint,    avg,      delta,     predict,       predictdelta,      timeon,     timecount), flush=True)
+        print("Count %4d: set=%5.1f avg=%5.1f delta=%5.1f predict=%5.1f predictdelta=%5.1f predictint=%5.1f timeon=%2d timecount=%2d" % 
+              (count,  setpoint,    avg,      delta,     predict,       predictdelta,      predictint,      timeon,     timecount), flush=True)
         time.sleep(1)
 
 #start up threads
@@ -171,7 +176,7 @@ t1.start()
 def emit_data():
     while True:
         json_data = json.dumps(
-        {'time':timei,'avg':round(avg,1),'timeon':timeon,\
+        {'time':round(timei,0),'avg':round(avg,1),'timeon':timeon,\
         'top':round(top,1),'probe1':round(probe1,1),\
         'probe2':round(probe2,1),'back':round(back,1),\
         'pi':round(pi,1),'heatsink':round(heatsink,1),\
@@ -202,8 +207,13 @@ def update_setpoint(data):
 @socketio.on('update_onoff')			
 def update_onoff(data):
     global onoff
+    global time0
     print("Update on/off to ",data)
     onoff = data
+    if data=="True":
+        time0=time.time()
+        print(round(time0,0))
+
 
 @socketio.on('update_upper')			
 def update_upper(data):

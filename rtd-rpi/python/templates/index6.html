@@ -34,9 +34,11 @@
         <th>Upper</th>
         <th>Lower</th>
         <th>Fan</th>
-        <th>Setpoint</th>
+        <th>Set</th>
+        <th>Cmd</th>
         <th>Avg</th>
         <th>Error</th>
+        <th>Int</th>
         <th>Ton</th>
         <th>Top</th>
         <th>Bottom</th>
@@ -45,7 +47,7 @@
         <th>Probe1</th>
         <th>Probe2</th>
         <th>Pi</th>
-        <th>Heatsink</th>
+        <th>SSRs</th>
     </tr>
     <tr>
         <td><label class="toggle">
@@ -69,8 +71,10 @@
             <span class="labels" data-on="ON" data-off="OFF"></span>
         </label></td>
         <td><input id="setpoint" type="number" value="25"></td>
+        <td id="tCommand"></td>
         <td id="tAvg"></td>
         <td id="tError"></td>
+        <td id="tIntegral"></td>
         <td id="tTon"></td>
         <td id="tTop"></td>
         <td id="tBottom"></td>
@@ -290,6 +294,13 @@
                     fill: false,
                 },
                 {
+                    label: "Command",
+                    backgroundColor: 'rgb(0, 255, 0)',
+                    borderColor: 'rgb(0, 255, 0)',
+                    data: [],
+                    fill: false,
+                },
+                {
                     label: "Average",
                     backgroundColor: 'rgb(255, 0, 0)',
                     borderColor: 'rgb(255, 0, 0)',
@@ -345,6 +356,13 @@
                     borderColor: 'rgb(255, 0, 0)',
                     data: [],
                     fill: false,
+                },
+                {
+                    label: "Integral",
+                    backgroundColor: 'rgb(0, 255, 0)',
+                    borderColor: 'rgb(0, 255, 0)',
+                    data: [],
+                    fill: false,
                 }
                 ],
             },
@@ -391,15 +409,15 @@
                 datasets: [
                 {
                     label: "On Time x 10",
-                    backgroundColor: 'rgb(255, 0, 0)',
-                    borderColor: 'rgb(255, 0, 0)',
+                    backgroundColor: 'rgb(0, 0, 255)',
+                    borderColor: 'rgb(0, 0, 255)',
                     data: [],
                     fill: false,
                 },
                 {
                     label: "Error",
-                    backgroundColor: 'rgb(0, 255, 0)',
-                    borderColor: 'rgb(0, 255, 0)',
+                    backgroundColor: 'rgb(255, 0, 0)',
+                    borderColor: 'rgb(255, 0, 0)',
                     data: [],
                     fill: false,
                 }
@@ -522,7 +540,9 @@
                 config3.data.datasets[1].data.shift();
                 config4.data.datasets[0].data.shift();
                 config4.data.datasets[1].data.shift();
+                config4.data.datasets[2].data.shift();
                 config5.data.datasets[0].data.shift();
+                config5.data.datasets[1].data.shift();
                 config6.data.datasets[0].data.shift();
                 config6.data.datasets[1].data.shift();
             }
@@ -545,20 +565,24 @@
 
             config4.data.labels.push(data.time);
             config4.data.datasets[0].data.push(data.setpoint);
-            config4.data.datasets[1].data.push(data.avg);
+            config4.data.datasets[1].data.push(data.command);
+            config4.data.datasets[2].data.push(data.avg);
             lineChart4.update();
 
             config5.data.labels.push(data.time);
-            config5.data.datasets[0].data.push(data.e);
+            config5.data.datasets[0].data.push(data.error);
+            config5.data.datasets[1].data.push(data.integral);
             lineChart5.update();
 
             config6.data.labels.push(data.time);
             config6.data.datasets[0].data.push(data.on_time*10);     // add some offset so both lines show
-            config6.data.datasets[1].data.push(data.e);
+            config6.data.datasets[1].data.push(data.error);
             lineChart6.update();
 
+            document.getElementById('tCommand').innerHTML = data.command.toFixed(1);
             document.getElementById('tAvg').innerHTML = data.avg.toFixed(1);
-            document.getElementById('tError').innerHTML = data.e.toFixed(1);
+            document.getElementById('tError').innerHTML = data.error.toFixed(1);
+            document.getElementById('tIntegral').innerHTML = data.integral.toFixed(1);
             document.getElementById('tTon').innerHTML = data.on_time.toFixed(3);
             document.getElementById('tTop').innerHTML = data.top.toFixed(1);
             document.getElementById('tBottom').innerHTML = data.bottom.toFixed(1);

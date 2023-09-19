@@ -63,23 +63,30 @@ fan = 0.0
 time0 = time.time()
 timei = 0.0
 setpoint = 25
+command = 25
 onoff = False
 enableupper = False
 enablelower = False
 enablefan = False
-N = 10
+enableint = False
+
 # PID gains
-Kp = 0.075
-Ki = 0.0
-Kd = 0.0
-# PID controller implementation
-K1 = Kp+Ki+Kd
-K2 = -Kp-2*Kd
-K3 = Kd
-e = 0
-e1 = 0
-e2 = 0
-d = 0
+Kp = 0.033
+Ki = 0.001
+
+# PI controller
+error = 0
+integral = 0
+
+# S-curve limiter
+sA = 0
+sError = 0
+sStop = 0
+sAmax = 0.05    # max change of command per second
+sJmax = 0.001   # max change of accel per second
+
+# NaN sometimes appears in the temperture readings from librtd?
+nan_count = 0
 
 # read 8 temps from rtd
 def controller():
@@ -96,16 +103,21 @@ def controller():
     global upper
     global lower
     global fan
-    global e
-    global e1
-    global e2
-    global d
+    global error
+    global integral
     global avg
     global on_time
+    global nan_count
+    global command
+    global sA
+    global sStop
+    global sError
+
     # local vars
     count = 0  
     time1 = 0.0
     time2 = 0.0
+    temp = 0
 
     while True:
         count = count + 1       # cycle counter for debug
@@ -117,41 +129,121 @@ def controller():
             GPIO.output(16,0)   # fan off
             fan = 0
 
-        # read sensors
+        # read sensors and protect from NaN
         timei = time.time()-time0
-        top = librtd.get(0,1)
-        bottom = librtd.get(0,7)
-        front = librtd.get(0,8)
-        back = librtd.get(0,4)
-        probe1 = librtd.get(0,2)
-        probe2 = librtd.get(0,3)
-        pi = librtd.get(0,5)
-        heatsink = librtd.get(0,6)
-        avg = 0.25*(top+bottom+front+back)
-
-        # PID controller, always compute errors
-        e2 = e1
-        e1 = e
-        e = setpoint - avg
+        temp = librtd.get(0,1)
+        if(np.isnan(temp)==False):
+            top = temp
+        else:
+            nan_count = nan_count+1
+        temp = librtd.get(0,7)
+        if(np.isnan(temp)==False):
+            bottom = temp
+        else:
+            nan_count = nan_count+1
+        temp = librtd.get(0,8)
+        if(np.isnan(temp)==False):
+            front = temp
+        else:
+            nan_count = nan_count+1
+        temp = librtd.get(0,4)
+        if(np.isnan(temp)==False):
+            back = temp
+        else:
+            nan_count = nan_count+1        
+        temp = librtd.get(0,2)
+        if(np.isnan(temp)==False):
+            probe1 = temp
+        else:
+            nan_count = nan_count+1
+        temp = librtd.get(0,3)
+        if(np.isnan(temp)==False):
+            probe2 = temp
+        else:
+            nan_count = nan_count+1
+        temp = librtd.get(0,5)
+        if(np.isnan(temp)==False):
+            pi = temp
+        else:
+            nan_count = nan_count+1
+        temp = librtd.get(0,6)
+        if(np.isnan(temp)==False):
+            heatsink = temp
+        else:
+            nan_count = nan_count+1
+        temp = 0.25*(top+bottom+front+back)
+        if(np.isnan(temp)==False):
+            avg = temp
+        else:
+            nan_count = nan_count+1
 
         if onoff == False:
             # oven is off
             on_time = 0
+            error = 0
+            integral = 0
+            enableint = False
+            command = avg
             GPIO.output(21,0)   # upper off
             GPIO.output(12,0)   # lower off
             GPIO.output(16,0)   # fan off
         else:
-            # PID controller, compute on_time
+            # PI controller, compute on_time
             with lock:
-                if e>0:
-                    d = K1*e + K2*e1 + K3*e2
-                    # limit max on_time so emit_data thread can get some time
-                    on_time = on_time + d
-                    if on_time>0.9:
-                        on_time=0.9
+                sError = setpoint-command
+                if(np.absolute(sError)<0.1):
+                    # error is small, set command to setpoint
+                    command=setpoint
+                    sA=0
                 else:
-                    on_time=0
+                    # update acceleration
+                    if(sError>0):
+                        # check for accelerating in wrong direction
+                        if(sA<0):
+                            sA=sA+sJmax
+                        else:
+                            # if within stopping distance begin decel
+                            sStop= sA*sA/(2*sJmax)+sA
+                            sStop= sStop*1.05
+                            if sError<sStop:
+                                sA=sA-sJmax
+                            else:
+                                if sA<sAmax:
+                                    sA=sA+sJmax
+                    else:
+                        # check for accelerating in wrong direction
+                        if(sA>0):
+                            sA=sA-sJmax
+                        else:
+                            # if within stopping distance begin decel
+                            sStop= -sA*sA/(2*sJmax)-sA  # check this, old code had +sA on the end
+                            sStop= sStop*1.05
+                            if sError>sStop:
+                                sA=sA+sJmax
+                            else:
+                                if sA>-sAmax:
+                                    sA=sA-sJmax
+                    # update command
+                    command=command+sA                
 
+                # compute                
+                error = command - avg
+                integral = integral + 0.01*error
+                if integral<0:
+                    integral=0
+                # limit authority of the integral term, 0.2 in open loop will reach max temp
+                if integral>=0.2/Ki:
+                    integral=0.2/Ki
+                on_time = Kp*error + Ki*integral
+
+                # limit max on_time so emit_data thread can get some time
+                if on_time>0.9:
+                    on_time=0.9
+
+                # enforce a minimum on_time since SCRs only turn off at zero Vac
+                if on_time<0.02:
+                    on_time=0.0
+ 
                 if on_time > 0:
                     # turn on output
                     time1=time.time()
@@ -171,8 +263,8 @@ def controller():
                     GPIO.output(21,0)   # upper off
                     GPIO.output(12,0)   # lower off
 
-        print("%5d: time=%5d    set=%5.1f    avg=%5.1f    e=%5.1f    on_time=%5.3f    actual=%5.3f" % 
-              (count, timei,    setpoint,    avg,         e,         on_time,         time2-time1), flush=True)
+        print("%5d: time=%5d   set=%7.3f  cmd=%7.3f   sErr=%7.3f  sA=%7.3f  sStop=%7.3f  avg=%7.3f   e=%7.3f   int=%7.3f   on_time=%5.3f     actual=%5.3f   nan_count=%3d" % 
+              (count, timei,   setpoint,  command,    sError,     sA,       sStop,       avg,        error,    integral,   on_time,         time2-time1,    nan_count), flush=True)
         
         # delay 1 second minus the on_time
         time.sleep(1-on_time)
@@ -186,19 +278,19 @@ def emit_data():
         with lock:
             json_data = json.dumps(
             {'time':round(timei,0),
-            'top':round(top,1),'bottom':round(bottom,1),
-            'front':round(front,1),'back':round(back,1),
-            'probe1':round(probe1,1),'probe2':round(probe2,1),
-            'pi':round(pi,1),'heatsink':round(heatsink,1),
-            'setpoint':round(setpoint,1),'avg':round(avg,1),
-            'e':round(-e,1),'on_time':round(on_time,3)
+            'top':top,'bottom':bottom,
+            'front':front,'back':back,
+            'probe1':probe1,'probe2':probe2,
+            'pi':pi,'heatsink':heatsink,
+            'setpoint':setpoint,'command':command,'avg':avg,
+            'error':-error,'integral':integral,'on_time':on_time
             })
             
             # Send data to the 'update_chart' event
             socketio.emit('update_chart', json_data)
             #print("emit data {}",json_data)
         
-        # Sleep for a while (adjust this based on your desired update rate)
+        # Sleep long enough that browser client doesn't overload cpu
         time.sleep(5)
 
 # flask webpage main
@@ -220,7 +312,6 @@ def update_onoff(data):
     onoff = data
     if data==True:
         time0=time.time()
-        print(round(time0,0))
 
 @socketio.on('update_upper')			
 def update_upper(data):

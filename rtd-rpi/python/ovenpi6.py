@@ -71,8 +71,8 @@ enablefan = False
 enableint = False
 
 # PID gains
-Kp = 0.033
-Ki = 0.001
+Kp = 0.05
+Ki = 0.005   # integrator has 0.01 gain on top of this Ki
 
 # PI controller
 error = 0
@@ -82,8 +82,8 @@ integral = 0
 sA = 0
 sError = 0
 sStop = 0
-sAmax = 0.05    # max change of command per second
-sJmax = 0.001   # max change of accel per second
+sAmax = 0.1         # max change of command per second
+sJmax = 0.0002      # max change of accel per second
 
 # NaN sometimes appears in the temperture readings from librtd?
 nan_count = 0
@@ -188,8 +188,9 @@ def controller():
             GPIO.output(12,0)   # lower off
             GPIO.output(16,0)   # fan off
         else:
-            # PI controller, compute on_time
+            # oven is on
             with lock:
+                # S-curve input shaping on the command
                 sError = setpoint-command
                 if(np.absolute(sError)<0.1):
                     # error is small, set command to setpoint
@@ -226,7 +227,7 @@ def controller():
                     # update command
                     command=command+sA                
 
-                # compute                
+                # compute error and integral
                 error = command - avg
                 integral = integral + 0.01*error
                 if integral<0:
@@ -234,6 +235,10 @@ def controller():
                 # limit authority of the integral term, 0.2 in open loop will reach max temp
                 if integral>=0.2/Ki:
                     integral=0.2/Ki
+                # # reset integral when above setpoint
+                # if error<0:
+                #     integral=0
+                # compute on_time
                 on_time = Kp*error + Ki*integral
 
                 # limit max on_time so emit_data thread can get some time

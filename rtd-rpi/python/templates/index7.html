@@ -51,26 +51,26 @@
     </tr>
     <tr>
         <td><label class="toggle">
-            <input type="checkbox" id="onoff">
+            <input type="checkbox" id="onoff" {% if initial_values['onoff'] %} checked {% endif %}>
             <span class="slider"></span>
             <span class="labels" data-on="ON" data-off="OFF"></span>
         </label></td>
         <td><label class="toggle">
-            <input type="checkbox" id="enableupper">
+            <input type="checkbox" id="enableupper" {% if initial_values['enableupper'] %} checked {% endif %}>
             <span class="slider"></span>
             <span class="labels" data-on="ON" data-off="OFF"></span>
         </label></td>
         <td><label class="toggle">
-            <input type="checkbox" id="enablelower">
+            <input type="checkbox" id="enablelower" {% if initial_values['enablelower'] %} checked {% endif %}>
             <span class="slider"></span>
             <span class="labels" data-on="ON" data-off="OFF"></span>
         </label></td>
         <td><label class="toggle">
-            <input type="checkbox" id="enablefan">
+            <input type="checkbox" id="enablefan" {% if initial_values['enablefan'] %} checked {% endif %}>
             <span class="slider"></span>
             <span class="labels" data-on="ON" data-off="OFF"></span>
         </label></td>
-        <td><input id="setpoint" type="number" value="25"></td>
+        <td><input id="setpoint" type="number" value={{ initial_values['setpoint'] }}></td>
         <td id="tCommand"></td>
         <td id="tAvg"></td>
         <td id="tError"></td>

@@ -256,7 +256,15 @@ def emit_data():
 # flask webpage main
 @app.route("/")
 def index():
-	return render_template('index7.html')
+    initial_values = {
+        'setpoint':setpoint,
+        'onoff':onoff,
+        'enableupper':enableupper,
+        'enablelower':enablelower,
+        'enablefan':enablefan
+    }
+
+    return render_template('index7.html',initial_values=initial_values)
 
 @socketio.on('update_setpoint')			
 def update_setpoint(data):

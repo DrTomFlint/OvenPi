@@ -11,6 +11,43 @@ from flask_socketio import SocketIO, emit
 import threading
 import random
 import numpy as np
+import sql
+
+# globals to hold current readings and commands
+top = 0.0
+bottom = 0.0
+front = 0.0
+back = 0.0
+probe1 = 0.0
+probe2 = 0.0
+pi = 0.0
+ssr = 0.0
+avg = 0
+on_time = 0
+timecount = 0
+time0 = time.time()
+timei = 0.0
+setpoint = 25
+command = 25
+onoff = False
+enableupper = False
+enablelower = False
+enablefan = False
+
+database_file = './database/ovenpi7.db'
+db = sql.open(database_file)
+run_number = sql.read_last_run_number(db)
+
+# PID gains
+Kp = 0.05
+Ki = 0.005   # integrator has 0.01 gain on top of this Ki
+
+# PI controller
+error = 0
+integral = 0
+
+# NaN sometimes appears in the temperture readings from librtd?
+nan_count = 0
 
 app = Flask(__name__)
 #app.config['SECRET_KEY'] = 'secret!'
@@ -19,14 +56,15 @@ socketio = SocketIO(app)
 
 # Make Control C exit properly after turning off the SSRs
 def handler(signum,frame):
-	print(" ")
-	print("Control C detected, exiting ovenpi.py")
-	print(" ")
-	GPIO.output(21,0)
-	GPIO.output(12,0)
-	GPIO.output(16,0)
-	GPIO.cleanup()
-	exit(1)
+    print(" ")
+    print("Control C detected, exiting ovenpi.py")
+    print(" ")
+    GPIO.output(21,0)
+    GPIO.output(12,0)
+    GPIO.output(16,0)
+    GPIO.cleanup()
+    sql.close(db)
+    exit(1)
 
 signal.signal(signal.SIGINT, handler)
 
@@ -43,39 +81,35 @@ GPIO.setup(21,GPIO.OUT)
 GPIO.setup(12,GPIO.OUT)
 GPIO.setup(16,GPIO.OUT)
 
-# globals to hold current readings and commands
-top = 0.0
-bottom = 0.0
-front = 0.0
-back = 0.0
-probe1 = 0.0
-probe2 = 0.0
-pi = 0.0
-heatsink = 0.0
-avg = 0
-on_time = 0
-timecount = 0
-time0 = time.time()
-timei = 0.0
-setpoint = 25
-command = 25
-onoff = False
-enableupper = False
-enablelower = False
-enablefan = False
+def emit_data():
+    while True:
+        with lock:
+            json_data = json.dumps(
+            {'time':round(timei,0),'run_number':run_number,
+            'top':top,'bottom':bottom,
+            'front':front,'back':back,
+            'probe1':probe1,'probe2':probe2,
+            'pi':pi,'ssr':ssr,
+            'setpoint':setpoint,'command':command,'avg':avg,
+            'error':-error,'integral':integral,'on_time':on_time
+            })
+            
+            # Send data to the 'update_chart' event
+            socketio.emit('update_chart', json_data)
+            #print("emit data {}",json_data)
+        
+        # Sleep long enough that browser client doesn't overload cpu
+        time.sleep(5)
 
-# PID gains
-Kp = 0.05
-Ki = 0.005   # integrator has 0.01 gain on top of this Ki
+def record_data():
+    db2 = sql.open(database_file)    
+    while True:
+        if onoff:
+            with lock:
+                # run time     top bottom front back    probe1 probe2 pi ssr     avg setpoint command on_time
+                sql.insert_run_data(db2,(run_number,timei,top,bottom,front,back,probe1,probe2,pi,ssr,avg,setpoint,command,on_time))
+        time.sleep(5)
 
-# PI controller
-error = 0
-integral = 0
-
-# NaN sometimes appears in the temperture readings from librtd?
-nan_count = 0
-
-# read 8 temps from rtd
 def controller():
     # call out globals that are modified within this function
     global timei
@@ -86,7 +120,7 @@ def controller():
     global probe1
     global probe2
     global pi
-    global heatsink
+    global ssr
     global upper
     global lower
     global fan
@@ -156,7 +190,7 @@ def controller():
             nan_count = nan_count+1
         temp = librtd.get(0,6)
         if(np.isnan(temp)==False):
-            heatsink = temp
+            ssr = temp
         else:
             nan_count = nan_count+1
         temp = 0.25*(top+bottom+front+back)
@@ -228,35 +262,20 @@ def controller():
         
         # delay 1 second minus the on_time
         time.sleep(1-on_time)
-
+            
 #start up threads
 t1 = threading.Thread(target=controller,daemon=True)
 t1.start()
-
-def emit_data():
-    while True:
-        with lock:
-            json_data = json.dumps(
-            {'time':round(timei,0),
-            'top':top,'bottom':bottom,
-            'front':front,'back':back,
-            'probe1':probe1,'probe2':probe2,
-            'pi':pi,'heatsink':heatsink,
-            'setpoint':setpoint,'command':command,'avg':avg,
-            'error':-error,'integral':integral,'on_time':on_time
-            })
-            
-            # Send data to the 'update_chart' event
-            socketio.emit('update_chart', json_data)
-            #print("emit data {}",json_data)
-        
-        # Sleep long enough that browser client doesn't overload cpu
-        time.sleep(5)
+t2 = threading.Thread(target=emit_data,daemon=True)
+t2.start()
+t3 = threading.Thread(target=record_data,daemon=True)
+t3.start()
 
 # flask webpage main
 @app.route("/")
 def index():
     initial_values = {
+        'run_number':run_number,
         'setpoint':setpoint,
         'onoff':onoff,
         'enableupper':enableupper,
@@ -276,10 +295,16 @@ def update_setpoint(data):
 def update_onoff(data):
     global onoff
     global time0
+    global run_number
     print("Update on/off to ",data)
-    onoff = data
     if data==True:
         time0=time.time()
+        run_number+=1
+        db3=sql.open(database_file)
+        timestring=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print('starting test %2d at %s' % (run_number,timestring))
+        sql.insert_run_summary(db3,(run_number,timestring,'default comment'))
+    onoff = data
 
 @socketio.on('update_upper')			
 def update_upper(data):
@@ -301,7 +326,6 @@ def update_fan(data):
 
 if __name__=="__main__":
 #	app.run(host='0.0.0.0',debug=False)
-    socketio.start_background_task(target=emit_data)
     socketio.run(app,host='0.0.0.0',debug=False)
 
 

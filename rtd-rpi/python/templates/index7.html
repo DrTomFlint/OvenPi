@@ -9,11 +9,6 @@
 
 
 <table>
-    <!-- <tr>
-        <th>Chamber</th>
-        <th>Probe</th>
-        <th>Controller</th>
-    </tr> -->
     <tr>
         <td><canvas id="canvas1" width="550" height="350"></canvas></td>
         <td><canvas id="canvas2" width="550" height="350"></canvas></td>
@@ -34,6 +29,7 @@
         <th>Upper</th>
         <th>Lower</th>
         <th>Fan</th>
+        <th>Run #</th>
         <th>Set</th>
         <th>Cmd</th>
         <th>Avg</th>
@@ -70,7 +66,10 @@
             <span class="slider"></span>
             <span class="labels" data-on="ON" data-off="OFF"></span>
         </label></td>
+        <td id="run_number"> {{ initial_values['run_number'] }}</td>
         <td><input id="setpoint" type="number" value={{ initial_values['setpoint'] }}></td>
+        <!-- <td><input id="run_number" type="number"></td>
+        <td><input id="setpoint" type="number"></td> -->
         <td id="tCommand"></td>
         <td id="tAvg"></td>
         <td id="tError"></td>
@@ -83,7 +82,7 @@
         <td id="tProbe1"></td>
         <td id="tProbe2"></td>
         <td id="tPi"></td>
-        <td id="tHeatsink"></td>
+        <td id="tSSRs"></td>
     </tr>
 </table>
 
@@ -480,12 +479,22 @@
         // Emit a change in setpoint, limit the range
         const setpoint = document.getElementById('setpoint');
         setpoint.onchange = function(){
-            var setval = Number(setpoint.value);
-            if(setval<0)setval=0;
-            if(setval>230)setval=230;
-            setpoint.value = setval;
-            socket.emit('update_setpoint',setval);
+            var val = Number(setpoint.value);
+            if(val<0)val=0;
+            if(val>230)val=230;
+            setpoint.value = val;
+            socket.emit('update_setpoint',val);
         }
+
+        // // Emit a change in run_number, limit the range
+        // const run_number = document.getElementById('run_number');
+        // run_number.onchange = function(){
+        //     var val = Number(setpoint.value);
+        //     if(val<1)val=1;
+        //     if(val>230)val=230;
+        //     run_number.value = val;
+        //     socket.emit('update_run_number',val);
+        // }
 
         // Emit a change in on/off switch
         const onoff = document.getElementById('onoff');
@@ -579,6 +588,8 @@
             config6.data.datasets[1].data.push(data.error);
             lineChart6.update();
 
+            // document.getElementById('setpoint').value = data.setpoint.toFixed(1);
+            document.getElementById('run_number').innerHTML = data.run_number;
             document.getElementById('tCommand').innerHTML = data.command.toFixed(1);
             document.getElementById('tAvg').innerHTML = data.avg.toFixed(1);
             document.getElementById('tError').innerHTML = data.error.toFixed(1);
@@ -591,7 +602,7 @@
             document.getElementById('tProbe1').innerHTML = data.probe1.toFixed(1);
             document.getElementById('tProbe2').innerHTML = data.probe2.toFixed(1);
             document.getElementById('tPi').innerHTML = data.pi.toFixed(1);
-            document.getElementById('tHeatsink').innerHTML = data.heatsink.toFixed(1);
+            document.getElementById('tSSRs').innerHTML = data.ssr.toFixed(1);
 
         });
     });

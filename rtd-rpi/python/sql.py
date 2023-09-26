@@ -70,6 +70,43 @@ def read_last_run_number(db):
         return 0
 
 #-----------------------------------------------------------------------------------------
+def read_last_run_start(db):
+
+    cursor = db.cursor()
+
+    q_read_run_number = '''
+        SELECT *
+        FROM run_summary
+        ORDER BY run_number DESC
+    '''
+
+    cursor.execute(q_read_run_number)
+    row = cursor.fetchone()
+    if row:
+        return row[2]
+    else:
+        return 0
+
+
+#-----------------------------------------------------------------------------------------
+def read_last_run_comment(db):
+
+    cursor = db.cursor()
+
+    q_read_run_number = '''
+        SELECT *
+        FROM run_summary
+        ORDER BY run_number DESC
+    '''
+
+    cursor.execute(q_read_run_number)
+    row = cursor.fetchone()
+    if row:
+        return row[3]
+    else:
+        return 0
+
+#-----------------------------------------------------------------------------------------
 def insert_run_data(db,data):
 
     cursor = db.cursor()
@@ -109,7 +146,7 @@ def read_run_data(db,run_number):
     cursor.execute(q_read_run_data,str(run_number))
     data = cursor.fetchall()
 
-    print('read db for test {}',run_number)
+    print('read db for test',run_number)
     return data
 
 

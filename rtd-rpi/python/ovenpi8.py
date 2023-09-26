@@ -37,7 +37,11 @@ enablefan = False
 database_file = './database/ovenpi8.db'
 db = sql.open(database_file)
 run_number = sql.read_last_run_number(db)
+run_start = sql.read_last_run_start(db)
+run_comment = sql.read_last_run_comment(db)
 emit_refresh = True
+
+print(f'STARTUP: last test {run_number} started at {run_start}, comment: {run_comment}')
 
 # PID gains
 Kp = 0.05
@@ -105,7 +109,7 @@ def emit_data():
                     })
                     # Send data to the 'update_chart' event
                     socketio.emit('update_chart', json_data)
-                    print('emit_refresh',json_data)
+                    #print('emit_refresh',json_data)
 
             else:
                 json_data = json.dumps(
@@ -120,7 +124,7 @@ def emit_data():
                 
                 # Send data to the 'update_chart' event
                 socketio.emit('update_chart', json_data)
-                print("emit data {}",json_data)
+                #print("emit data {}",json_data)
         
         # Sleep long enough that browser client doesn't overload cpu
         time.sleep(5)
@@ -298,31 +302,27 @@ t3.start()
 # flask webpage main
 @app.route("/")
 def index():
+    global run_number
+    global run_start
+    global run_comment
     global emit_refresh
-    emit_refresh = True
+    emit_refresh=True
+    db4 = sql.open(database_file)    
+    run_number = sql.read_last_run_number(db4)
+    run_start = sql.read_last_run_start(db4)
+    run_comment = sql.read_last_run_comment(db4)
     initial_values = {
         'run_number':run_number,
         'setpoint':setpoint,
         'onoff':onoff,
         'enableupper':enableupper,
         'enablelower':enablelower,
-        'enablefan':enablefan
+        'enablefan':enablefan,
+        'run_comment':run_comment[:],
+        'run_start':run_start
     }
     return render_template('index8.html',initial_values=initial_values)
 
-# flask webpage main
-@app.route("/past")
-def past():
-    initial_values = {
-        'run_number':run_number,
-        'setpoint':setpoint,
-        'onoff':onoff,
-        'enableupper':enableupper,
-        'enablelower':enablelower,
-        'enablefan':enablefan
-    }
-
-    return render_template('past8.html',initial_values=initial_values)
 
 @socketio.on('update_setpoint')			
 def update_setpoint(data):

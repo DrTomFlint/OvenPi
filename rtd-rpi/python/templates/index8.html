@@ -85,7 +85,11 @@
         <td id="tSSRs"></td>
     </tr>
 </table>
-<input type="text", id="test_comment">
+<table>
+    <td><input type="text", id="test_comment" value="{{ initial_values['run_comment'] }}"></td>
+    <td id="test_start" >Started at: {{ initial_values['run_start'] }}</td>
+</table>
+
 
 <!--suppress JSUnresolvedLibraryURL -->
 <script src="static/jquery.min.js"></script>
@@ -149,7 +153,7 @@
                     xAxes: [{
                         display: true,
                         scaleLabel: {
-                            display: true,
+                            display: false,
                             labelString: 'Time'
                         },
                         ticks:{
@@ -206,7 +210,7 @@
                     xAxes: [{
                         display: true,
                         scaleLabel: {
-                            display: true,
+                            display: false,
                             labelString: 'Time'
                         },
                         ticks:{
@@ -263,7 +267,7 @@
                     xAxes: [{
                         display: true,
                         scaleLabel: {
-                            display: true,
+                            display: false,
                             labelString: 'Time'
                         },
                         ticks:{
@@ -327,7 +331,7 @@
                     xAxes: [{
                         display: true,
                         scaleLabel: {
-                            display: true,
+                            display: false,
                             labelString: 'Time'
                         },
                         ticks:{
@@ -384,7 +388,7 @@
                     xAxes: [{
                         display: true,
                         scaleLabel: {
-                            display: true,
+                            display: false,
                             labelString: 'Time'
                         },
                         ticks:{
@@ -441,7 +445,7 @@
                     xAxes: [{
                         display: true,
                         scaleLabel: {
-                            display: true,
+                            display: false,
                             labelString: 'Time'
                         },
                         ticks:{

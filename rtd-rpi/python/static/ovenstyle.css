@@ -14,8 +14,8 @@ table, th, td {
 }
   
 th, td {
-    padding: 10px;
-    font-size: 26px;
+    padding: 6px;
+    font-size: 24px;
     text-align: right;
 }
 
@@ -27,12 +27,12 @@ input::-webkit-inner-spin-button {
 
 input[type="text"]
 {
-    font-size:26px;
+    font-size:24px;
     text-align: right;
 }
 input[type="number"]
 {
-    font-size:26px;
+    font-size:24px;
     width: 80px;
     text-align: right;
 }

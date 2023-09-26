@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sqlite3
 
-database_file = './database/ovenpi7.db'
+database_file = './database/ovenpi8.db'
 
 # create tables
 db = sqlite3.connect(database_file)

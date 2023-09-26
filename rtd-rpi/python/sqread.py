@@ -2,7 +2,7 @@
 import sqlite3
 
 # connect to database and get a cursor
-db = sqlite3.connect('./database/ovenpi7.db')
+db = sqlite3.connect('./database/ovenpi8.db')
 
 # fetch out the last run number
 cursor = db.cursor()

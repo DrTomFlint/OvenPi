@@ -6,6 +6,7 @@
 #=========================================================================================
 
 import sqlite3
+import json
 
 #-----------------------------------------------------------------------------------------
 def open(database_file):
@@ -93,5 +94,23 @@ def insert_run_summary(db,data):
 
     cursor.execute(q_insert_run_summary,data)
     db.commit()
+
+#-----------------------------------------------------------------------------------------
+def read_run_data(db,run_number):
+    
+    cursor = db.cursor()
+
+    q_read_run_data='''
+        SELECT * FROM run_data
+         WHERE run_number = ?
+    '''
+    
+    # Fetch data from the run_data table
+    cursor.execute(q_read_run_data,str(run_number))
+    data = cursor.fetchall()
+
+    print('read db for test {}',run_number)
+    return data
+
 
 #=========================================================================================

@@ -7,6 +7,64 @@ h1 {
 color: navy;
 margin-left: 20px;
 }
+.table-charts{
+     border: 2px solid black;
+    /* border-collapse: collapse; */
+    padding: 6px;
+    font-size: 24px;
+    text-align: right;
+
+}
+.table-charts th{
+    color:#000;
+    vertical-align:middle;
+    text-align:center;    
+}
+.table-charts td{
+    color:#000;
+    vertical-align:middle;
+    text-align:center;    
+}
+
+.table-status{
+    border: 2px solid black;
+    /* border-collapse: collapse; */
+    padding: 6px;
+    font-size: 22px;
+    text-align: right;
+
+}
+.table-status th{
+    color:#000;
+    vertical-align:middle;
+    text-align:center;    
+}
+.table-status td{
+    color:#000;
+    vertical-align:middle;
+    text-align:center;    
+    width: 75px; 
+}
+
+.table-run{
+    border: 2px solid black;
+    /* border-collapse: collapse; */
+    padding: 6px;
+    font-size: 24px;
+    text-align: right;
+
+}
+.table-run th{
+    color:#000;
+    vertical-align:middle;
+    text-align:center;    
+}
+.table-run td{
+    color:#000;
+    vertical-align:middle;
+    text-align:center;   
+    /* width: 250px;   */
+}
 
 table, th, td {
     border: 2px solid black;
@@ -27,18 +85,18 @@ input::-webkit-inner-spin-button {
 
 input[type="text"]
 {
-    font-size:24px;
+    font-size:22px;
     text-align: right;
 }
 input[type="number"]
 {
-    font-size:24px;
+    font-size:22px;
     width: 80px;
     text-align: right;
 }
 
 .toggle {
---width: 80px;
+--width: 70px;
 --height: calc(var(--width) / 3);
 
 position: relative;

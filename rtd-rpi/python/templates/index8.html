@@ -10,20 +10,20 @@
 
 <table>
     <tr>
-        <td><canvas id="canvas1" width="550" height="350"></canvas></td>
-        <td><canvas id="canvas2" width="550" height="350"></canvas></td>
-        <td><canvas id="canvas3" width="550" height="350"></canvas></td>
+        <td><canvas id="canvas1" width="560" height="355"></canvas></td>
+        <td><canvas id="canvas2" width="560" height="355"></canvas></td>
+        <td><canvas id="canvas3" width="560" height="355"></canvas></td>
     </tr>
     <tr>
-        <td><canvas id="canvas4" width="550" height="350"></canvas></td>
-        <td><canvas id="canvas5" width="550" height="350"></canvas></td>
-        <td><canvas id="canvas6" width="550" height="350"></canvas></td>
+        <td><canvas id="canvas4" width="560" height="355"></canvas></td>
+        <td><canvas id="canvas5" width="560" height="355"></canvas></td>
+        <td><canvas id="canvas6" width="560" height="355"></canvas></td>
     </tr>
 </table>
 
 <!-- <textarea id="text1" cols="100" rows="10"></textarea> -->
 
-<table>
+<table class="table-status">
     <tr>
         <th>Run</th>
         <th>Upper</th>
@@ -85,7 +85,7 @@
         <td id="tSSRs"></td>
     </tr>
 </table>
-<table>
+<table class=".table-run">
     <td><input type="text", id="test_comment" value="{{ initial_values['run_comment'] }}"></td>
     <td id="test_start" >Started at: {{ initial_values['run_start'] }}</td>
 </table>
@@ -522,7 +522,7 @@
 
         // Listen for the 'init_chart' event from the server
         // clear all the chart data
-        socket.on('init_chart', function () {
+        socket.on('reset_chart', function () {
 
                 config1.data.labels = [];
                 config1.data.datasets[0].data = [];        
@@ -557,6 +557,42 @@
                 config6.data.datasets[1].data = [];
             }
         );
+
+       // Listen for the 'update_chart' event from the server
+       socket.on('init_chart', function (message) {
+            const data = JSON.parse(message);
+
+            // for debugging show the json data in a text box below the graphs
+            //document.getElementById('text1').innerHTML = message;
+
+            config1.data.labels.push(data.time);
+            config1.data.datasets[0].data.push(data.top);
+            config1.data.datasets[1].data.push(data.bottom);
+            config1.data.datasets[2].data.push(data.front);
+            config1.data.datasets[3].data.push(data.back);
+
+            config2.data.labels.push(data.time);
+            config2.data.datasets[0].data.push(data.probe1);
+            config2.data.datasets[1].data.push(data.probe2);
+
+            config3.data.labels.push(data.time);
+            config3.data.datasets[0].data.push(data.pi);
+            config3.data.datasets[1].data.push(data.heatsink);
+
+            config4.data.labels.push(data.time);
+            config4.data.datasets[0].data.push(data.setpoint);
+            config4.data.datasets[1].data.push(data.command);
+            config4.data.datasets[2].data.push(data.avg);
+
+            config5.data.labels.push(data.time);
+            config5.data.datasets[0].data.push(data.error);
+            config5.data.datasets[1].data.push(data.integral);
+
+            config6.data.labels.push(data.time);
+            config6.data.datasets[0].data.push(data.on_time*10);     // add some offset so both lines show
+            config6.data.datasets[1].data.push(data.error);
+
+       });
 
         // Listen for the 'update_chart' event from the server
         socket.on('update_chart', function (message) {
@@ -637,6 +673,8 @@
             document.getElementById('tProbe2').innerHTML = data.probe2.toFixed(1);
             document.getElementById('tPi').innerHTML = data.pi.toFixed(1);
             document.getElementById('tSSRs').innerHTML = data.ssr.toFixed(1);
+            document.getElementById('test_start').innerHTML = ["Started at: "+data.started];
+
 
         });
 

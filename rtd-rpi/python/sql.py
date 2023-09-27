@@ -16,7 +16,7 @@ def open(database_file):
         CREATE TABLE IF NOT EXISTS run_data(
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
             run_number INTEGER,
-            time INTEGER,
+            time REAL,
             top REAL,
             bottom REAL,
             front REAL,
@@ -28,6 +28,7 @@ def open(database_file):
             avg REAL,
             setpoint REAL,
             command REAL,
+            integral REAL,
             on_time REAL,
             FOREIGN KEY (run_number) REFERENCES run_summary(run_number)
         )'''
@@ -85,7 +86,7 @@ def read_last_run_start(db):
     if row:
         return row[2]
     else:
-        return 0
+        return 'never'
 
 
 #-----------------------------------------------------------------------------------------
@@ -104,7 +105,7 @@ def read_last_run_comment(db):
     if row:
         return row[3]
     else:
-        return 0
+        return 'comment'
 
 #-----------------------------------------------------------------------------------------
 def insert_run_data(db,data):
@@ -112,8 +113,8 @@ def insert_run_data(db,data):
     cursor = db.cursor()
 
     q_insert_run_data='''
-        INSERT INTO run_data (run_number, time, top, bottom, front, back, probe1, probe2, pi, ssr, avg, setpoint, command, on_time)
-        VALUES (?,?,?,?,?, ?,?,?,?,?, ?,?,?,?)
+        INSERT INTO run_data (run_number, time, top, bottom, front, back, probe1, probe2, pi, ssr, avg, setpoint, command, integral, on_time)
+        VALUES (?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?)
     '''
 
     cursor.execute(q_insert_run_data,data)
@@ -147,7 +148,10 @@ def read_run_data(db,run_number):
     data = cursor.fetchall()
 
     print('read db for test',run_number)
-    return data
+    if data:
+        return data
+    else:
+        return []
 
 
 #=========================================================================================

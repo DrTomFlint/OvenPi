@@ -40,15 +40,15 @@ q_read_data = '''
     WHERE run_number = ?
 '''
 
-data_titles=['run','time','top','bottom','front','back','probe1','probe2','pi','ssr','avg','set','cmd','on_time']
+data_titles=['run','time','top','bottom','front','back','probe1','probe2','pi','ssr','avg','set','cmd','integral','on_time']
 for run_number in range(1,last_run+1):
     print('---------------------------------------------------')
-    print('{:>4}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}'.format(*data_titles))
+    print('{:>4}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}{:>9}'.format(*data_titles))
     cursor.execute(q_read_data,str(run_number))
 
     row = cursor.fetchone()
     while row:
-        print('{:>4}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.3f}'.format(*row[1:]))
+        print('{:>4}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.1f}{:>9.3f}'.format(*row[1:]))
         row = cursor.fetchone()
 
 # done so close database

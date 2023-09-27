@@ -39,7 +39,9 @@ db = sql.open(database_file)
 run_number = sql.read_last_run_number(db)
 run_start = sql.read_last_run_start(db)
 run_comment = sql.read_last_run_comment(db)
-emit_refresh = True
+emit_refresh = False
+if run_number>0:
+    emit_refresh = True
 
 print(f'STARTUP: last test {run_number} started at {run_start}, comment: {run_comment}')
 
@@ -92,8 +94,9 @@ def emit_data():
         with lock:
             if emit_refresh:
                 # Send full test data to the 'init_chart' event
-                # 0id, 1run_number, 2time, 3top, 4bottom, 5front, 6back, 7probe1, 8probe2, 9pi, 10ssr, 11avg, 12setpoint, 13command, 14on_time
-                socketio.emit('init_chart')
+                # 0id, 1run_number, 2time, 3top, 4bottom, 5front, 6back, 7probe1, 8probe2, 9pi, 
+                # 10ssr, 11avg, 12setpoint, 13command, 14integral, 15on_time
+                socketio.emit('reset_chart')
                 emit_refresh = False
                 db3 = sql.open(database_file)    
                 data = sql.read_run_data(db3,run_number)
@@ -105,10 +108,10 @@ def emit_data():
                     'probe1':row[7],'probe2':row[8],
                     'pi':row[9],'ssr':row[10],
                     'setpoint':row[12],'command':row[13],'avg':row[11],
-                    'error':-(row[13]-row[11]),'integral':0,'on_time':row[14]
+                    'error':-(row[13]-row[11]),'integral':row[14],'on_time':row[15]
                     })
                     # Send data to the 'update_chart' event
-                    socketio.emit('update_chart', json_data)
+                    socketio.emit('init_chart', json_data)
                     #print('emit_refresh',json_data)
 
             else:
@@ -119,7 +122,8 @@ def emit_data():
                 'probe1':probe1,'probe2':probe2,
                 'pi':pi,'ssr':ssr,
                 'setpoint':setpoint,'command':command,'avg':avg,
-                'error':-error,'integral':integral,'on_time':on_time
+                'error':-error,'integral':integral,'on_time':on_time,
+                'started':run_start
                 })
                 
                 # Send data to the 'update_chart' event
@@ -135,7 +139,7 @@ def record_data():
         if onoff:
             with lock:
                 # run time     top bottom front back    probe1 probe2 pi ssr     avg setpoint command on_time
-                sql.insert_run_data(db2,(run_number,timei,top,bottom,front,back,probe1,probe2,pi,ssr,avg,setpoint,command,on_time))
+                sql.insert_run_data(db2,(run_number,timei,top,bottom,front,back,probe1,probe2,pi,ssr,avg,setpoint,command,integral,on_time))
         time.sleep(5)
 
 def controller():
@@ -180,7 +184,7 @@ def controller():
             fan = 0
 
         # read sensors and protect from NaN
-        timei = time.time()-time0
+        timei = (1/60)*(time.time()-time0)
         temp = librtd.get(0,1)
         if(np.isnan(temp)==False):
             top = temp
@@ -285,7 +289,7 @@ def controller():
                     GPIO.output(21,0)   # upper off
                     GPIO.output(12,0)   # lower off
 
-        print("%5d: time=%5d   set=%7.3f  cmd=%7.3f   avg=%7.3f   e=%7.3f   int=%7.3f   on_time=%5.3f  nan_count=%3d" % 
+        print("%5d: time=%7.3f   set=%7.3f  cmd=%7.3f   avg=%7.3f   e=%7.3f   int=%7.3f   on_time=%5.3f  nan_count=%3d" % 
               (count, timei,   setpoint,  command,    avg,        error,    integral,   on_time,       nan_count), flush=True)
         
         # delay 1 second minus the on_time
@@ -331,18 +335,19 @@ def update_setpoint(data):
     setpoint = data
 
 @socketio.on('update_onoff')			
-def update_onoff(data,test_comment):
+def update_onoff(data,run_comment):
     global onoff
     global time0
     global run_number
+    global run_start
     print("Update on/off to ",data)
     if data==True:
         time0=time.time()
         run_number+=1
         db3=sql.open(database_file)
-        timestring=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print('starting test %2d at %s, comment = %s' % (run_number,timestring,test_comment))
-        sql.insert_run_summary(db3,(run_number,timestring,test_comment))
+        run_start=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print('starting test %2d at %s, comment = %s' % (run_number,run_start,run_comment))
+        sql.insert_run_summary(db3,(run_number,run_start,run_comment))
     onoff = data
 
 @socketio.on('update_upper')			

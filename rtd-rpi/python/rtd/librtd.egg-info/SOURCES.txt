@@ -1,7 +1,0 @@
-README.md
-setup.py
-librtd/__init__.py
-librtd.egg-info/PKG-INFO
-librtd.egg-info/SOURCES.txt
-librtd.egg-info/dependency_links.txt
-librtd.egg-info/top_level.txt

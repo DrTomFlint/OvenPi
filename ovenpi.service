@@ -1,0 +1,17 @@
+[Unit]
+Description=Oven Pi Flask Application
+After=network.target
+
+[Service]
+Type=simple
+User=tflint  
+Group=tflint
+WorkingDirectory=/home/tflint  
+ExecStart=/usr/bin/python3 /home/tflint/ovenpi8.py
+
+# Restart the service if it crashes
+Restart=always
+RestartSec=30  # Optional: Time to wait before restarting (in seconds)
+
+[Install]
+WantedBy=multi-user.target

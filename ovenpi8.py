@@ -174,12 +174,13 @@ def controller():
     while True:
         count = count + 1       # cycle counter for debug
         # fan control
+        print("fan enable",enablefan)
         if enablefan == True:
             GPIO.output(16,1)   # fan on
-            fan = 1
+            print("fan on 1")
         else:
             GPIO.output(16,0)   # fan off
-            fan = 0
+            print("fan off 1")
 
         # read sensors and protect from NaN
         timei = (1/60)*(time.time()-time0)
@@ -240,7 +241,8 @@ def controller():
             s.v = 0
             GPIO.output(21,0)   # upper off
             GPIO.output(12,0)   # lower off
-            GPIO.output(16,0)   # fan off
+            # GPIO.output(16,0)   # fan off
+            # print("fan off 2")
         else:
             # oven is on
             with lock:
@@ -373,7 +375,13 @@ def update_fan(data):
 
 if __name__=="__main__":
 #	app.run(host='0.0.0.0',debug=False)
-    socketio.run(app,host='0.0.0.0',debug=False)
+#    socketio.run(app,host='0.0.0.0',debug=True,port='5000',allow_unsafe_werkzeug=True)  # if debug=True, fan will toggle on/off
+#    socketio.run(app,host='0.0.0.0',port='5000')    # This is the one that works with fan control
+    socketio.run(app,host='0.0.0.0',port='5000',allow_unsafe_werkzeug=True)    # This good for running as a service
+
+# Do NOT use debug=True, it will cause the fan to toggle on/off
+        
+
 
 
 

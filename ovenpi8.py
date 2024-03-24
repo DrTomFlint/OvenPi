@@ -40,8 +40,6 @@ run_number = sql.read_last_run_number(db)
 run_start = sql.read_last_run_start(db)
 run_comment = sql.read_last_run_comment(db)
 emit_refresh = False
-if run_number>0:
-    emit_refresh = True
 
 print(f'STARTUP: last test {run_number} started at {run_start}, comment: {run_comment}')
 
@@ -309,8 +307,6 @@ def index():
     global run_number
     global run_start
     global run_comment
-    global emit_refresh
-    emit_refresh=True
     db4 = sql.open(database_file)    
     run_number = sql.read_last_run_number(db4)
     run_start = sql.read_last_run_start(db4)
@@ -326,6 +322,13 @@ def index():
         'run_start':run_start
     }
     return render_template('index8.html',initial_values=initial_values)
+
+
+@socketio.on('update_reload')			
+def update_reload():
+    global emit_refresh
+    emit_refresh=True
+    print("Update reload")
 
 
 @socketio.on('update_setpoint')			

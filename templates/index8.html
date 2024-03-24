@@ -88,6 +88,7 @@
 <table class=".table-run">
     <td><input type="text", id="test_comment" value="{{ initial_values['run_comment'] }}"></td>
     <td id="test_start" >Started at: {{ initial_values['run_start'] }}</td>
+    <td><button id="test_reload">Reload</button></td>
 </table>
 
 
@@ -497,6 +498,12 @@
         onoff.onchange = function(){
             var onoffval = onoff.checked;
             socket.emit('update_onoff',onoffval,test_comment.value);
+        }
+
+        // Emit a reload request
+        const reload = document.getElementById('test_reload');
+        reload.onclick = function(){
+            socket.emit('update_reload');
         }
 
         // Emit a change in upper enable

@@ -89,6 +89,7 @@
     <td><input type="text", id="test_comment" value="{{ initial_values['run_comment'] }}"></td>
     <td id="test_start" >Started at: {{ initial_values['run_start'] }}</td>
     <td><button id="test_reload">Reload</button></td>
+    <td><input id="vmax" type="number" value={{ initial_values['vmax'] }}></td>
 </table>
 
 
@@ -492,6 +493,16 @@
             socket.emit('update_setpoint',val);
         }
 
+        // Emit a change in vmax, limit the range
+        const vmax = document.getElementById('vmax');
+        vmax.onchange = function(){
+            var val = Number(vmax.value);
+            if(val<0)val=0;
+            if(val>230)val=230;
+            vmax.value = val;
+            socket.emit('update_vmax',val);
+        }
+
         // Emit a change in on/off switch
         const onoff = document.getElementById('onoff');
         const test_comment = document.getElementById('test_comment');
@@ -565,7 +576,7 @@
             }
         );
 
-       // Listen for the 'update_chart' event from the server
+       // Listen for the 'init_chart' event from the server
        socket.on('init_chart', function (message) {
             const data = JSON.parse(message);
 

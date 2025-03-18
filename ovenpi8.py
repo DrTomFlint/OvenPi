@@ -28,6 +28,7 @@ timecount = 0
 time0 = time.time()
 timei = 0.0
 setpoint = 25
+vmax = 0.1
 command = 25
 onoff = False
 enableupper = False
@@ -121,7 +122,7 @@ def emit_data():
                 'pi':pi,'ssr':ssr,
                 'setpoint':setpoint,'command':command,'avg':avg,
                 'error':-error,'integral':integral,'on_time':on_time,
-                'started':run_start
+                'started':run_start,'vmax':vmax
                 })
                 
                 # Send data to the 'update_chart' event
@@ -169,7 +170,8 @@ def controller():
     time1 = 0.0
     time2 = 0.0
     temp = 0
-    s = scurve.Scurve(target=0,x0=0,v0=0,vmax=0.1,amax=0.0002)
+    # s = scurve.Scurve(target=0,x0=0,v0=0,vmax=0.1,amax=0.0002)
+    s = scurve.Scurve(target=0,x0=0,v0=0,vmax=vmax,amax=0.0002)
 
     while True:
         count = count + 1       # cycle counter for debug
@@ -239,6 +241,7 @@ def controller():
             s.target = setpoint
             s.x = avg
             s.v = 0
+            s.vmax = vmax
             GPIO.output(21,0)   # upper off
             GPIO.output(12,0)   # lower off
             # GPIO.output(16,0)   # fan off
@@ -321,7 +324,8 @@ def index():
         'enablelower':enablelower,
         'enablefan':enablefan,
         'run_comment':run_comment[:],
-        'run_start':run_start
+        'run_start':run_start,
+        'vmax':vmax
     }
     return render_template('index8.html',initial_values=initial_values)
 
@@ -338,6 +342,12 @@ def update_setpoint(data):
     global setpoint
     print("Update setpoint to ",data)
     setpoint = data
+
+@socketio.on('update_vmax')			
+def update_vmax(data):
+    global vmax
+    print("Update vmax to ",data)
+    vmax = data
 
 @socketio.on('update_onoff')			
 def update_onoff(data,run_comment):
